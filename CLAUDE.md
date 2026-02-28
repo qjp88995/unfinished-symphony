@@ -117,6 +117,11 @@ const session = await getIronSession<SessionData>(await cookies(), sessionOption
 ### 环境变量
 ```env
 DATABASE_URL="file:./dev.db"
-ADMIN_PASSWORD_HASH="<bcrypt hash, 12 rounds>"   # node -e "require('bcryptjs').hash('pwd',12).then(console.log)"
+ADMIN_PASSWORD_HASH="\$2b\$12\$..."               # bcrypt hash，$ 需用 \$ 转义（dotenv-expand 问题）
 COOKIE_SECRET="<至少 32 个字符的随机字符串>"         # node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+生成哈希（自动转义 `$`）：
+```bash
+node -e "require('bcryptjs').hash('your-password',12).then(h=>process.stdout.write(h.replaceAll('\$','\\\\\$')+'\n'))"
 ```
