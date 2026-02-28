@@ -61,6 +61,7 @@ app/
 lib/
   db.ts                 # Prisma 单例（better-sqlite3 driver adapter）
   session.ts            # iron-session 配置（SessionData + sessionOptions）
+  utils.ts              # cn() 工具函数（clsx + tailwind-merge）
   ai/
     client.ts           # createAIModel()：从 DB 读取默认提供商配置
     tools.ts            # portfolioTools：11 个 tool 定义（ai SDK v6 inputSchema）
@@ -69,6 +70,7 @@ lib/
 components/ui/          # shadcn/ui 组件
 middleware.ts           # 保护 /admin/* + /api/chat + /api/providers/*
 prisma/schema.prisma    # Project + AIProvider 模型
+app/generated/prisma/   # Prisma Client 生成产物（勿手动修改）
 ```
 
 路径别名：`@/*` 映射到项目根目录。
@@ -116,5 +118,5 @@ const session = await getIronSession<SessionData>(await cookies(), sessionOption
 ```env
 DATABASE_URL="file:./dev.db"
 ADMIN_PASSWORD_HASH="<bcrypt hash, 12 rounds>"   # node -e "require('bcryptjs').hash('pwd',12).then(console.log)"
-COOKIE_SECRET="<至少 32 个字符的随机字符串>"
+COOKIE_SECRET="<至少 32 个字符的随机字符串>"         # node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```

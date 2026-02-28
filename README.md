@@ -25,13 +25,19 @@ pnpm prisma generate
 ```env
 DATABASE_URL="file:./dev.db"
 ADMIN_PASSWORD_HASH="<见下方生成方式>"
-COOKIE_SECRET="<至少 32 个字符的随机字符串>"
+COOKIE_SECRET="<见下方生成方式>"
 ```
 
 生成密码哈希：
 
 ```bash
 node -e "require('bcryptjs').hash('你的密码', 12).then(console.log)"
+```
+
+生成 Cookie 密钥（至少 32 个字符）：
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 **3. 初始化数据库**
@@ -97,3 +103,4 @@ pnpm lint                              # ESLint
 pnpm prisma generate                   # 重新生成 Prisma Client
 pnpm prisma migrate dev --name <name>  # 新建迁移
 pnpm prisma studio                     # 数据库 GUI
+```
