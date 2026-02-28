@@ -119,14 +119,14 @@ export default function SettingsPage() {
       closeDialog();
       loadProviders();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Save failed");
+      setSaveError(err instanceof Error ? err.message : "保存失败");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this provider?")) return;
+    if (!confirm("确定删除此提供商？")) return;
     await fetch(`/api/providers/${id}`, { method: "DELETE" });
     loadProviders();
   }
@@ -145,23 +145,23 @@ export default function SettingsPage() {
     label: string;
     type?: string;
   }> = [
-    { key: "name", label: "Provider Name" },
+    { key: "name", label: "提供商名称" },
     {
       key: "apiKey",
-      label: editId ? "API Key (leave blank to keep current)" : "API Key",
+      label: editId ? "API Key（留空保持不变）" : "API Key",
       type: "password",
     },
-    { key: "model", label: "Model (e.g. gpt-4o, claude-sonnet-4-6)" },
-    { key: "baseUrl", label: "Base URL (optional, leave blank for default)" },
+    { key: "model", label: "模型（如 gpt-4o、claude-sonnet-4-6）" },
+    { key: "baseUrl", label: "Base URL（可选，留空使用默认值）" },
   ];
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">AI Providers</h1>
+          <h1 className="text-xl font-semibold">AI 提供商</h1>
           <p className="text-sm text-zinc-400 mt-1">
-            Configure the AI providers used in the chat interface.
+            配置对话界面使用的 AI 提供商。
           </p>
         </div>
         <Dialog
@@ -173,14 +173,12 @@ export default function SettingsPage() {
         >
           <DialogTrigger asChild>
             <Button size="sm" onClick={openAdd}>
-              Add Provider
+              添加提供商
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
             <DialogHeader>
-              <DialogTitle>
-                {editId ? "Edit Provider" : "Add Provider"}
-              </DialogTitle>
+              <DialogTitle>{editId ? "编辑提供商" : "添加提供商"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 mt-2">
               {formFields.map(({ key, label, type }) => (
@@ -205,7 +203,7 @@ export default function SettingsPage() {
                   }
                   className="rounded"
                 />
-                Set as default provider
+                设为默认提供商
               </label>
               {saveError && <p className="text-sm text-red-400">{saveError}</p>}
               <Button
@@ -218,7 +216,7 @@ export default function SettingsPage() {
                 }
                 className="w-full"
               >
-                {saving ? "Saving\u2026" : "Save"}
+                {saving ? "保存中…" : "保存"}
               </Button>
             </div>
           </DialogContent>
@@ -228,11 +226,11 @@ export default function SettingsPage() {
       <Table>
         <TableHeader>
           <TableRow className="border-zinc-800 hover:bg-transparent">
-            <TableHead className="text-zinc-400">Name</TableHead>
-            <TableHead className="text-zinc-400">Model</TableHead>
+            <TableHead className="text-zinc-400">名称</TableHead>
+            <TableHead className="text-zinc-400">模型</TableHead>
             <TableHead className="text-zinc-400">Base URL</TableHead>
-            <TableHead className="text-zinc-400">Status</TableHead>
-            <TableHead className="text-right text-zinc-400">Actions</TableHead>
+            <TableHead className="text-zinc-400">状态</TableHead>
+            <TableHead className="text-right text-zinc-400">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -242,7 +240,7 @@ export default function SettingsPage() {
                 colSpan={5}
                 className="text-center text-zinc-500 py-12"
               >
-                No providers configured yet. Add one to start using the AI chat.
+                尚未配置提供商，请添加一个以使用 AI 对话。
               </TableCell>
             </TableRow>
           ) : (
@@ -253,12 +251,12 @@ export default function SettingsPage() {
                   {p.model}
                 </TableCell>
                 <TableCell className="text-sm text-zinc-500 max-w-[200px] truncate">
-                  {p.baseUrl ?? <span className="text-zinc-600">default</span>}
+                  {p.baseUrl ?? <span className="text-zinc-600">默认</span>}
                 </TableCell>
                 <TableCell>
                   {p.isDefault && (
                     <Badge variant="secondary" className="text-xs">
-                      Default
+                      默认
                     </Badge>
                   )}
                 </TableCell>
@@ -271,7 +269,7 @@ export default function SettingsPage() {
                         className="text-xs text-zinc-400 hover:text-white"
                         onClick={() => handleSetDefault(p.id)}
                       >
-                        Set default
+                        设为默认
                       </Button>
                     )}
                     <Button
@@ -280,7 +278,7 @@ export default function SettingsPage() {
                       className="text-xs text-zinc-400 hover:text-white"
                       onClick={() => openEdit(p)}
                     >
-                      Edit
+                      编辑
                     </Button>
                     <Button
                       size="sm"
@@ -288,7 +286,7 @@ export default function SettingsPage() {
                       className="text-xs text-red-500 hover:text-red-400"
                       onClick={() => handleDelete(p.id)}
                     >
-                      Delete
+                      删除
                     </Button>
                   </div>
                 </TableCell>

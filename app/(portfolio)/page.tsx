@@ -1,10 +1,10 @@
-import { prisma } from '@/lib/db';
-import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
+import { prisma } from "@/lib/db";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 async function getProjects() {
   return prisma.project.findMany({
-    orderBy: [{ featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
+    orderBy: [{ featured: "desc" }, { order: "asc" }, { createdAt: "desc" }],
   });
 }
 
@@ -26,15 +26,15 @@ export default async function PortfolioPage() {
         <div className="animate-fade-in space-y-6 max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-zinc-400 backdrop-blur">
             <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-            Open to opportunities
+            正在寻找机会
           </div>
 
           <h1 className="text-5xl sm:text-6xl font-bold tracking-tight bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent leading-none">
-            Frontend Developer
+            前端开发者
           </h1>
 
           <p className="text-lg text-zinc-400 leading-relaxed">
-            Building interfaces that feel inevitable. Here&apos;s what I&apos;ve been working on.
+            打造令人印象深刻的界面，以下是我的作品。
           </p>
 
           <div className="flex gap-4 justify-center">
@@ -42,7 +42,7 @@ export default async function PortfolioPage() {
               href="#projects"
               className="rounded-full bg-white text-black px-6 py-2.5 text-sm font-medium hover:bg-zinc-200 transition-colors"
             >
-              View Projects
+              查看项目
             </a>
           </div>
         </div>
@@ -53,7 +53,7 @@ export default async function PortfolioPage() {
         {featured.length > 0 && (
           <div className="mb-16">
             <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-8">
-              Featured
+              精选
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {featured.map((p) => (
@@ -66,7 +66,7 @@ export default async function PortfolioPage() {
         {rest.length > 0 && (
           <div>
             <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-8">
-              {featured.length > 0 ? 'More Projects' : 'Projects'}
+              {featured.length > 0 ? "更多项目" : "项目"}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {rest.map((p) => (
@@ -78,7 +78,7 @@ export default async function PortfolioPage() {
 
         {projects.length === 0 && (
           <div className="text-center py-24 text-zinc-600">
-            <p>No projects yet. Add some via the admin chat.</p>
+            <p>暂无项目，请通过后台对话添加。</p>
           </div>
         )}
       </section>
@@ -134,7 +134,7 @@ function ProjectCard({ project }: { project: Project }) {
               rel="noopener noreferrer"
               className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
             >
-              Live →
+              预览 →
             </Link>
           )}
           {project.repoUrl && (
@@ -144,7 +144,7 @@ function ProjectCard({ project }: { project: Project }) {
               rel="noopener noreferrer"
               className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
             >
-              Source
+              源码
             </Link>
           )}
         </div>

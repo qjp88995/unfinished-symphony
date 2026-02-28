@@ -1,12 +1,12 @@
-'use client';
-import { useRouter } from 'next/navigation';
+"use client";
+import { useRouter } from "next/navigation";
 
 export default function SignOutButton() {
   const router = useRouter();
 
   async function handleSignOut() {
-    await fetch('/api/auth', { method: 'DELETE' });
-    router.push('/admin/login');
+    await fetch("/api/auth", { method: "DELETE" });
+    router.push("/admin/login");
   }
 
   return (
@@ -14,7 +14,7 @@ export default function SignOutButton() {
       onClick={handleSignOut}
       className="text-sm text-zinc-400 hover:text-white transition-colors"
     >
-      Sign out
+      退出登录
     </button>
   );
 }

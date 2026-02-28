@@ -79,8 +79,7 @@ export default function ChatPage() {
           );
         }
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Something went wrong";
+        const message = err instanceof Error ? err.message : "出现错误";
         setError(message);
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
       } finally {
@@ -108,14 +107,10 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.length === 0 && (
           <div className="text-center text-zinc-500 mt-20">
-            <p className="text-lg font-medium text-zinc-300">
-              Portfolio Manager
-            </p>
-            <p className="text-sm mt-2">
-              Manage your portfolio with natural language.
-            </p>
+            <p className="text-lg font-medium text-zinc-300">作品集管理</p>
+            <p className="text-sm mt-2">使用自然语言管理你的作品集。</p>
             <p className="text-xs text-zinc-600 mt-1">
-              e.g. &quot;Add a project called XYZ using React and
+              例如：&quot;添加一个名为 XYZ 的项目，使用 React 和
               TypeScript&quot;
             </p>
           </div>
@@ -147,7 +142,7 @@ export default function ChatPage() {
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex justify-start">
             <div className="bg-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-400">
-              Thinking…
+              思考中…
             </div>
           </div>
         )}
@@ -166,12 +161,12 @@ export default function ChatPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Message… (Enter to send, Shift+Enter for newline)"
+            placeholder="输入消息…（Enter 发送，Shift+Enter 换行）"
             className="flex-1 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 resize-none min-h-[44px] max-h-32"
             rows={1}
           />
           <Button type="submit" disabled={isLoading || !input.trim()}>
-            Send
+            发送
           </Button>
         </form>
       </div>
