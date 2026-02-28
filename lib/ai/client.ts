@@ -1,5 +1,5 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import { prisma } from "@/lib/db";
+import { createOpenAI } from '@ai-sdk/openai';
+import { prisma } from '@/lib/db';
 
 export interface ProviderConfig {
   model: string;
@@ -15,15 +15,11 @@ export async function getDefaultProviderConfig(): Promise<ProviderConfig> {
 
   if (!provider) {
     throw new Error(
-      "No default AI provider configured. Please add one in Settings.",
+      'No default AI provider configured. Please add one in Settings.'
     );
   }
 
-  return {
-    model: provider.model,
-    apiKey: provider.apiKey,
-    baseUrl: provider.baseUrl,
-  };
+  return { model: provider.model, apiKey: provider.apiKey, baseUrl: provider.baseUrl };
 }
 
 /** 创建 AI 模型实例（基于默认提供商配置）。 */
@@ -33,10 +29,6 @@ export async function createAIModel() {
   const openai = createOpenAI({
     apiKey: config.apiKey,
     baseURL: config.baseUrl ?? undefined,
-    // Force Chat Completions API (/chat/completions) instead of the new
-    // Responses API (/responses). Third-party OpenAI-compatible providers
-    // (DeepSeek, etc.) only implement Chat Completions.
-    compatibility: "compatible",
   });
 
   return openai(config.model);
