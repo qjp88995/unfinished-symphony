@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 个人作品集 · AI 管理
 
-## Getting Started
+个人前端作品集网站，通过 AI 自然语言对话管理作品数据。
 
-First, run the development server:
+## 功能
+
+- **公开展示**：暗色主题，渐变光晕背景，作品卡片悬停发光效果
+- **AI 对话管理**：用自然语言增删改查作品，支持批量操作和精选标记
+- **多模型支持**：可配置任意 OpenAI 兼容的 API（包括 Anthropic、本地模型等）
+- **简单认证**：密码保护后台，httpOnly cookie session
+
+## 快速开始
+
+**1. 安装依赖**
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm prisma generate
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**2. 配置环境变量**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+复制 `.env.example` 为 `.env`，填写以下内容：
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+DATABASE_URL="file:./dev.db"
+ADMIN_PASSWORD_HASH="<见下方生成方式>"
+COOKIE_SECRET="<至少 32 个字符的随机字符串>"
+```
 
-## Learn More
+生成密码哈希：
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+node -e "require('bcryptjs').hash('你的密码', 12).then(console.log)"
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**3. 初始化数据库**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm prisma migrate deploy
+```
 
-## Deploy on Vercel
+**4. 启动**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+访问 `http://localhost:3000`。
+
+## 使用方式
+
+| 路径 | 说明 |
+|------|------|
+| `/` | 公开作品集展示 |
+| `/admin/login` | 后台登录 |
+| `/admin/chat` | AI 对话管理界面 |
+| `/admin/settings` | AI 提供商配置 |
+
+### 配置 AI 提供商
+
+登录后台 → Settings → Add Provider，填写：
+- **Provider Name**：显示名称（如 `OpenAI`）
+- **API Key**：对应提供商的 API Key
+- **Model**：模型名称（如 `gpt-4o`、`claude-sonnet-4-6`）
+- **Base URL**：自定义接口地址（兼容 OpenAI 协议的服务，留空使用官方默认）
+
+设为默认后，AI 对话将使用该提供商。
+
+### AI 对话示例
+
+```
+添加一个项目，名称是"个人博客"，使用 Next.js、TypeScript 和 Tailwind CSS，
+网站地址是 https://example.com，代码在 https://github.com/xxx/blog
+
+把"个人博客"设为精选项目
+
+列出所有项目
+
+删除 ID 为 xxx 的项目
+```
+
+## 技术栈
+
+- **Next.js 16** (App Router) + **React 19** + **TypeScript 5**
+- **Tailwind CSS 4** + **shadcn/ui**
+- **Vercel AI SDK v6**（Function Calling，流式输出）
+- **Prisma 7** + **SQLite**（better-sqlite3 driver adapter）
+- **iron-session v8**（加密 cookie 认证）
+
+## 常用命令
+
+```bash
+pnpm dev                               # 开发服务器
+pnpm build                             # 生产构建
+pnpm lint                              # ESLint
+pnpm prisma generate                   # 重新生成 Prisma Client
+pnpm prisma migrate dev --name <name>  # 新建迁移
+pnpm prisma studio                     # 数据库 GUI

@@ -4,64 +4,117 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目目标
 
-这是一个个人前端作品集网站，核心特性：
-- 通过 AI 自然语言对话管理作品数据（增删改查）
-- 支持配置多个模型提供商（如 OpenAI、Anthropic、自定义 API）和具体模型
-- 公开展示作品集，后台通过对话界面维护数据
+个人前端作品集网站，核心特性：
+- **公开展示**：暗色主题 + 渐变光晕，作品卡片悬停发光效果
+- **AI 对话管理**：通过自然语言对作品数据进行增删改查、批量操作
+- **多模型支持**：可配置任意 OpenAI 兼容的提供商（baseURL + apiKey + model）
+- **简单密码认证**：bcrypt + iron-session cookie 保护后台
 
 ## 技术栈
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript 5**
-- **Tailwind CSS 4**（CSS-first 配置，`globals.css` 用 `@import "tailwindcss"` 而非配置文件）
+- **Tailwind CSS 4**（CSS-first，`globals.css` 用 `@import "tailwindcss"`，无 `tailwind.config.js`）
+- **shadcn/ui**（组件在 `components/ui/`，无 CDN 依赖）
+- **Vercel AI SDK v6**（`ai` 包，`streamText` + `inputSchema` tool 格式）
+- **Prisma 7** + **SQLite**（需 `@prisma/adapter-better-sqlite3` driver adapter）
+- **iron-session v8**（加密 cookie，Edge Runtime 使用三参数 API）
 - **pnpm** 包管理器
-- **ESLint 9**（`eslint-config-next` core-web-vitals + typescript 规则）
 
 ## 常用命令
 
 ```bash
-pnpm dev        # 启动开发服务器 (http://localhost:3000)
+pnpm dev        # 开发服务器 (http://localhost:3000)
 pnpm build      # 生产构建
 pnpm start      # 运行生产构建
-pnpm lint       # 运行 ESLint
+pnpm lint       # ESLint
 
 # Prisma
+pnpm prisma generate                   # 重新生成 Prisma Client（必须在 build 前运行）
 pnpm prisma migrate dev --name <name>  # 创建并应用迁移
-pnpm prisma migrate deploy             # 生产环境应用迁移
-pnpm prisma studio                     # 打开数据库 GUI
-pnpm prisma generate                   # 重新生成 Prisma Client
+pnpm prisma migrate deploy             # 生产环境迁移
+pnpm prisma studio                     # 数据库 GUI
 ```
 
 ## 项目结构
 
 ```
-app/            # Next.js App Router 根目录
-  layout.tsx    # 根布局（Geist 字体、全局样式）
-  page.tsx      # 首页
-  globals.css   # 全局样式（Tailwind CSS 4 入口）
-public/         # 静态资源
+app/
+  (portfolio)/          # 路由组：公开作品集（无鉴权）
+    layout.tsx
+    page.tsx            # Hero + 作品网格（Server Component，直接读 DB）
+  admin/                # 后台路由（/admin/* URL，middleware 保护）
+    layout.tsx          # 导航 + Sign out
+    login/page.tsx      # 密码登录
+    chat/page.tsx       # AI 对话界面（自定义流式读取）
+    settings/page.tsx   # AI 提供商配置
+    sign-out-button.tsx # Client Component
+  api/
+    auth/route.ts       # POST 登录 / DELETE 登出
+    chat/route.ts       # POST 流式 AI 对话（+ Tool Calling）
+    projects/route.ts   # GET/POST
+    projects/[id]/route.ts  # PUT/DELETE
+    providers/route.ts  # GET/POST
+    providers/[id]/route.ts # PUT/DELETE
+  layout.tsx            # 根布局（Geist 字体）
+  globals.css           # Tailwind 入口 + 自定义动画
+
+lib/
+  db.ts                 # Prisma 单例（better-sqlite3 driver adapter）
+  session.ts            # iron-session 配置（SessionData + sessionOptions）
+  ai/
+    client.ts           # createAIModel()：从 DB 读取默认提供商配置
+    tools.ts            # portfolioTools：11 个 tool 定义（ai SDK v6 inputSchema）
+    executor.ts         # executeToolCall()：所有 DB 操作
+
+components/ui/          # shadcn/ui 组件
+middleware.ts           # 保护 /admin/* + /api/chat + /api/providers/*
+prisma/schema.prisma    # Project + AIProvider 模型
 ```
 
-路径别名：`@/*` 映射到项目根目录（如 `@/app/...`、`@/lib/...`）。
+路径别名：`@/*` 映射到项目根目录。
 
-## 架构约定
+## 架构关键点
 
-**计划中的目录结构（随项目演进）：**
-- `app/` — 页面路由（公开作品集展示 + 后台管理路由）
-- `lib/` — 工具函数、AI 客户端适配层
-- `components/` — 共享 UI 组件
-- `store/` 或 `hooks/` — 客户端状态管理
+### Prisma 7 初始化方式
+Prisma 7 要求 driver adapter，`lib/db.ts` 使用：
+```typescript
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import BetterSqlite3 from 'better-sqlite3';
+// new PrismaClient({ adapter: new PrismaBetterSqlite3(db) })
+```
+每次修改 schema 后必须运行 `pnpm prisma generate`。
 
-**数据层：**
-- 数据库：**SQLite** + **Prisma ORM**（schema 位于 `prisma/schema.prisma`，DB 文件 `prisma/dev.db`）
-- 作品数据（`Project`）、模型提供商配置（`AIProvider`）均持久化到 SQLite
-- Prisma Client 生成至 `app/generated/prisma/`（已 gitignore，每次需运行 `pnpm prisma generate`）
-- Prisma Client 单例封装在 `lib/db.ts`，在 Next.js dev 模式下避免热重载创建多余连接
-- 在 Route Handlers 和 Server Actions 中通过 `import { prisma } from "@/lib/db"` 使用
+### AI SDK v6 Tool 格式
+ai SDK v6 使用 `inputSchema` 而非 `parameters`：
+```typescript
+import { tool } from 'ai';
+tool({ description: '...', inputSchema: z.object({...}), execute: async (params) => ... })
+```
+`streamText` 使用 `stopWhen: stepCountIs(5)` 代替 `maxSteps`，响应用 `toTextStreamResponse()`。
 
-**AI 集成关键点：**
-- 模型提供商配置（provider、baseURL、apiKey、model）存储在 SQLite，通过服务端读取
-- AI 对话通过 Next.js Route Handlers（`app/api/`）代理，API Key 仅在服务端使用，不暴露给客户端
+### iron-session Edge Runtime 用法
+Middleware 中使用三参数形式（不用 `next/headers`）：
+```typescript
+const session = await getIronSession<SessionData>(req, res, sessionOptions);
+```
+Route Handler 中使用两参数形式：
+```typescript
+const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
+```
 
-**Tailwind CSS 4 注意事项：**
-- 使用 CSS 变量定义主题 token（`@theme inline { ... }`），不使用 `tailwind.config.js`
-- 暗色模式通过 `@media (prefers-color-scheme: dark)` 控制
+### 路由组 vs 实际 URL
+- `app/(portfolio)/page.tsx` → URL `/`（路由组不生成 URL 前缀）
+- `app/admin/chat/page.tsx` → URL `/admin/chat`（真实目录生成 URL）
+- Middleware matcher 对应真实 URL，与路由组括号名无关
+
+### AI 提供商安全
+- API Key 只在服务端 Route Handler 中读取，`GET /api/providers` 不返回 apiKey
+- `/api/chat` 和 `/api/providers/*` 由 middleware 验证 session
+- Chat API 对请求体做 Zod 验证（最多 50 条消息，每条最多 10000 字符）
+
+### 环境变量
+```env
+DATABASE_URL="file:./dev.db"
+ADMIN_PASSWORD_HASH="<bcrypt hash, 12 rounds>"   # node -e "require('bcryptjs').hash('pwd',12).then(console.log)"
+COOKIE_SECRET="<至少 32 个字符的随机字符串>"
+```
