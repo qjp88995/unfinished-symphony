@@ -1,4 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { prisma } from '@/lib/db';
 
 export interface ProviderConfig {
@@ -26,10 +27,16 @@ export async function getDefaultProviderConfig(): Promise<ProviderConfig> {
 export async function createAIModel() {
   const config = await getDefaultProviderConfig();
 
-  const openai = createOpenAI({
-    apiKey: config.apiKey,
-    baseURL: config.baseUrl ?? undefined,
-  });
+  if (config.baseUrl) {
+    // 第三方 OpenAI-compatible 提供商（DeepSeek 等）：使用 Chat Completions API
+    const provider = createOpenAICompatible({
+      name: 'custom',
+      apiKey: config.apiKey,
+      baseURL: config.baseUrl,
+    });
+    return provider(config.model);
+  }
 
-  return openai(config.model);
+  // 原生 OpenAI：使用新 Responses API
+  return createOpenAI({ apiKey: config.apiKey })(config.model);
 }
