@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  techStack   String   // JSON array as string, e.g. '["React","TypeScript"]'
+  imageUrl    String?
+  liveUrl     String?
+  repoUrl     String?
+  featured    Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AIProvider {
+  id        String   @id @default(cuid())
+  name      String   // 显示名称，如 "OpenAI"、"Anthropic"
+  baseUrl   String?  // 自定义 base URL，留空则使用官方默认
+  apiKey    String
+  model     String   // 具体模型，如 "gpt-4o"、"claude-opus-4-6"
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
