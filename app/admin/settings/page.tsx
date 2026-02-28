@@ -50,6 +50,7 @@ export default function SettingsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const loadProviders = useCallback(async () => {
     const res = await fetch("/api/providers");
@@ -91,6 +92,7 @@ export default function SettingsPage() {
     if (!editId && !form.apiKey) return; // apiKey required for new providers
 
     setSaving(true);
+    setSaveError("");
     const payload: Record<string, unknown> = {
       name: form.name,
       model: form.model,
@@ -102,15 +104,25 @@ export default function SettingsPage() {
     const url = editId ? `/api/providers/${editId}` : "/api/providers";
     const method = editId ? "PUT" : "POST";
 
-    await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    setSaving(false);
-    closeDialog();
-    loadProviders();
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          (data as { error?: string }).error || `Error ${res.status}`,
+        );
+      }
+      closeDialog();
+      loadProviders();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -195,6 +207,7 @@ export default function SettingsPage() {
                 />
                 Set as default provider
               </label>
+              {saveError && <p className="text-sm text-red-400">{saveError}</p>}
               <Button
                 onClick={handleSave}
                 disabled={

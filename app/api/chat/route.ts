@@ -1,4 +1,5 @@
 import { streamText, stepCountIs } from "ai";
+import { z } from "zod";
 import { createAIModel } from "@/lib/ai/client";
 import { portfolioTools } from "@/lib/ai/tools";
 
@@ -9,8 +10,21 @@ After executing a tool, summarize what you did in a friendly, concise way.
 Always confirm destructive actions (delete) with a brief acknowledgment.
 Respond in the same language the user uses.`;
 
+const messageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string().max(10_000),
+});
+
+const bodySchema = z.object({
+  messages: z.array(messageSchema).max(50),
+});
+
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const parsed = bodySchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return Response.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+  const { messages } = parsed.data;
 
   let model;
   try {

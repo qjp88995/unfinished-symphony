@@ -3,26 +3,39 @@ import { getIronSession } from 'iron-session';
 import { sessionOptions, type SessionData } from '@/lib/session';
 
 export async function middleware(req: NextRequest) {
-  if (!req.nextUrl.pathname.startsWith('/admin')) {
-    return NextResponse.next();
-  }
-  if (req.nextUrl.pathname === '/admin/login') {
-    return NextResponse.next();
+  const pathname = req.nextUrl.pathname;
+
+  // 保护 /admin/* 路由（除登录页外）
+  if (pathname.startsWith('/admin')) {
+    if (pathname === '/admin/login') {
+      return NextResponse.next();
+    }
+    const res = NextResponse.next();
+    const session = await getIronSession<SessionData>(req, res, sessionOptions);
+    if (!session.isAuthenticated) {
+      const loginUrl = new URL('/admin/login', req.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    return res;
   }
 
-  // Use the req/res overload of getIronSession — compatible with Edge Runtime
-  const res = NextResponse.next();
-  const session = await getIronSession<SessionData>(req, res, sessionOptions);
-
-  if (!session.isAuthenticated) {
-    const loginUrl = new URL('/admin/login', req.url);
-    loginUrl.searchParams.set('redirect', req.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
+  // 保护需要认证的 API 路由
+  if (
+    pathname === '/api/chat' ||
+    pathname.startsWith('/api/providers')
+  ) {
+    const res = NextResponse.next();
+    const session = await getIronSession<SessionData>(req, res, sessionOptions);
+    if (!session.isAuthenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return res;
   }
 
-  return res;
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/chat', '/api/providers/:path*'],
 };
