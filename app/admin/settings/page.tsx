@@ -160,7 +160,7 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">AI 提供商</h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             配置对话界面使用的 AI 提供商。
           </p>
         </div>
@@ -176,25 +176,27 @@ export default function SettingsPage() {
               添加提供商
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+          <DialogContent className="bg-card border-border text-foreground">
             <DialogHeader>
               <DialogTitle>{editId ? "编辑提供商" : "添加提供商"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 mt-2">
               {formFields.map(({ key, label, type }) => (
                 <div key={key} className="space-y-1">
-                  <label className="text-xs text-zinc-400">{label}</label>
+                  <label className="text-xs text-muted-foreground">
+                    {label}
+                  </label>
                   <Input
                     type={type ?? "text"}
                     value={form[key]}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, [key]: e.target.value }))
                     }
-                    className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                    className="bg-input border-input text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
               ))}
-              <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
                 <input
                   type="checkbox"
                   checked={form.isDefault}
@@ -205,7 +207,9 @@ export default function SettingsPage() {
                 />
                 设为默认提供商
               </label>
-              {saveError && <p className="text-sm text-red-400">{saveError}</p>}
+              {saveError && (
+                <p className="text-sm text-destructive">{saveError}</p>
+              )}
               <Button
                 onClick={handleSave}
                 disabled={
@@ -225,33 +229,37 @@ export default function SettingsPage() {
 
       <Table>
         <TableHeader>
-          <TableRow className="border-zinc-800 hover:bg-transparent">
-            <TableHead className="text-zinc-400">名称</TableHead>
-            <TableHead className="text-zinc-400">模型</TableHead>
-            <TableHead className="text-zinc-400">Base URL</TableHead>
-            <TableHead className="text-zinc-400">状态</TableHead>
-            <TableHead className="text-right text-zinc-400">操作</TableHead>
+          <TableRow className="border-border hover:bg-transparent">
+            <TableHead className="text-muted-foreground">名称</TableHead>
+            <TableHead className="text-muted-foreground">模型</TableHead>
+            <TableHead className="text-muted-foreground">Base URL</TableHead>
+            <TableHead className="text-muted-foreground">状态</TableHead>
+            <TableHead className="text-right text-muted-foreground">
+              操作
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {providers.length === 0 ? (
-            <TableRow className="border-zinc-800">
+            <TableRow className="border-border">
               <TableCell
                 colSpan={5}
-                className="text-center text-zinc-500 py-12"
+                className="text-center text-muted-foreground py-12"
               >
                 尚未配置提供商，请添加一个以使用 AI 对话。
               </TableCell>
             </TableRow>
           ) : (
             providers.map((p) => (
-              <TableRow key={p.id} className="border-zinc-800">
+              <TableRow key={p.id} className="border-border">
                 <TableCell className="font-medium">{p.name}</TableCell>
-                <TableCell className="font-mono text-sm text-zinc-400">
+                <TableCell className="font-mono text-sm text-muted-foreground">
                   {p.model}
                 </TableCell>
-                <TableCell className="text-sm text-zinc-500 max-w-[200px] truncate">
-                  {p.baseUrl ?? <span className="text-zinc-600">默认</span>}
+                <TableCell className="text-sm text-muted-foreground max-w-50 truncate">
+                  {p.baseUrl ?? (
+                    <span className="text-muted-foreground">默认</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   {p.isDefault && (
@@ -266,7 +274,7 @@ export default function SettingsPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="text-xs text-zinc-400 hover:text-white"
+                        className="text-xs text-muted-foreground hover:text-foreground"
                         onClick={() => handleSetDefault(p.id)}
                       >
                         设为默认
@@ -275,7 +283,7 @@ export default function SettingsPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-xs text-zinc-400 hover:text-white"
+                      className="text-xs text-muted-foreground hover:text-foreground"
                       onClick={() => openEdit(p)}
                     >
                       编辑
@@ -283,7 +291,7 @@ export default function SettingsPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-xs text-red-500 hover:text-red-400"
+                      className="text-xs text-destructive hover:text-destructive/80"
                       onClick={() => handleDelete(p.id)}
                     >
                       删除

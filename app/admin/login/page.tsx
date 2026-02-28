@@ -35,11 +35,11 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+    <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6 px-4">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold text-white">管理后台</h1>
-          <p className="text-sm text-zinc-400">输入密码以继续</p>
+          <h1 className="text-2xl font-semibold text-foreground">管理后台</h1>
+          <p className="text-sm text-muted-foreground">输入密码以继续</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-3">
           <Input
@@ -47,10 +47,10 @@ function LoginForm() {
             placeholder="密码"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
+            className="bg-input border-input text-foreground placeholder:text-muted-foreground"
             autoFocus
           />
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "登录中…" : "登录"}
           </Button>

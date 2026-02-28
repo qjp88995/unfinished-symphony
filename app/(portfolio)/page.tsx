@@ -19,17 +19,17 @@ export default async function PortfolioPage() {
       <section className="relative flex flex-col items-center justify-center min-h-screen px-6 text-center overflow-hidden">
         {/* Background glow effects */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-violet-600/20 blur-[120px]" />
-          <div className="absolute top-1/3 left-1/3 w-[400px] h-[400px] rounded-full bg-blue-600/10 blur-[100px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-150 rounded-full bg-violet-600/20 blur-[120px]" />
+          <div className="absolute top-1/3 left-1/3 size-100 rounded-full bg-blue-600/10 blur-[100px]" />
         </div>
 
         <div className="animate-fade-in space-y-6 max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-zinc-400 backdrop-blur">
-            <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+            <span className="size-1.5 rounded-full bg-green-400 animate-pulse" />
             正在寻找机会
           </div>
 
-          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent leading-none">
+          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight bg-linear-to-b from-white to-zinc-400 bg-clip-text text-transparent leading-none">
             前端开发者
           </h1>
 
@@ -107,7 +107,7 @@ function ProjectCard({ project }: { project: Project }) {
   })();
 
   return (
-    <div className="group relative rounded-2xl border border-white/5 bg-white/[0.02] p-6 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_0_30px_rgba(139,92,246,0.15)]">
+    <div className="group relative rounded-2xl border border-white/5 bg-white/2 p-6 transition-all duration-300 hover:border-white/20 hover:bg-white/4 hover:shadow-[0_0_30px_rgba(139,92,246,0.15)]">
       <div className="space-y-3">
         <h3 className="font-semibold text-white group-hover:text-violet-300 transition-colors">
           {project.title}

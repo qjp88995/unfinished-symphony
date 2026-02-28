@@ -12,7 +12,7 @@ export default function SignOutButton() {
   return (
     <button
       onClick={handleSignOut}
-      className="text-sm text-zinc-400 hover:text-white transition-colors"
+      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
     >
       退出登录
     </button>

@@ -106,10 +106,10 @@ export default function ChatPage() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.length === 0 && (
-          <div className="text-center text-zinc-500 mt-20">
-            <p className="text-lg font-medium text-zinc-300">作品集管理</p>
+          <div className="text-center text-muted-foreground mt-20">
+            <p className="text-lg font-medium text-foreground">作品集管理</p>
             <p className="text-sm mt-2">使用自然语言管理你的作品集。</p>
-            <p className="text-xs text-zinc-600 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               例如：&quot;添加一个名为 XYZ 的项目，使用 React 和
               TypeScript&quot;
             </p>
@@ -124,8 +124,8 @@ export default function ChatPage() {
             <div
               className={`max-w-[80%] rounded-xl px-4 py-3 text-sm ${
                 m.role === "user"
-                  ? "bg-white text-black"
-                  : "bg-zinc-800 text-zinc-100"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-foreground"
               }`}
             >
               {m.role === "assistant" ? (
@@ -141,28 +141,30 @@ export default function ChatPage() {
 
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex justify-start">
-            <div className="bg-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-400">
+            <div className="bg-muted rounded-xl px-4 py-3 text-sm text-muted-foreground">
               思考中…
             </div>
           </div>
         )}
 
         {error && (
-          <div className="text-red-400 text-sm text-center py-2">{error}</div>
+          <div className="text-destructive text-sm text-center py-2">
+            {error}
+          </div>
         )}
 
         <div ref={bottomRef} />
       </div>
 
       {/* Input */}
-      <div className="border-t border-zinc-800 p-4">
+      <div className="border-t border-border p-4">
         <form onSubmit={handleSubmit} className="flex gap-3 items-end">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="输入消息…（Enter 发送，Shift+Enter 换行）"
-            className="flex-1 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 resize-none min-h-[44px] max-h-32"
+            className="flex-1 bg-input border-input text-foreground placeholder:text-muted-foreground resize-none min-h-11 max-h-32"
             rows={1}
           />
           <Button type="submit" disabled={isLoading || !input.trim()}>

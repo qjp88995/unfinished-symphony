@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 技术栈
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript 5**
-- **Tailwind CSS 4**（CSS-first，`globals.css` 用 `@import "tailwindcss"`，无 `tailwind.config.js`）
+- **Tailwind CSS 4**（CSS-first，`globals.css` 用 `@import "tailwindcss"`，无 `tailwind.config.js`；全站固定暗色主题，`<html>` 带 `className="dark"`）
 - **shadcn/ui**（组件在 `components/ui/`，无 CDN 依赖）
 - **Vercel AI SDK v6**（`ai` 包，`streamText` + `inputSchema` tool 格式）
 - **Prisma 7** + **SQLite**（需 `@prisma/adapter-better-sqlite3` driver adapter）
@@ -56,7 +56,7 @@ app/
     providers/route.ts  # GET/POST
     providers/[id]/route.ts # PUT/DELETE
   layout.tsx            # 根布局（Geist 字体）
-  globals.css           # Tailwind 入口 + 自定义动画
+  globals.css           # Tailwind 入口 + @theme token（含动画）
 
 lib/
   db.ts                 # Prisma 单例（better-sqlite3 driver adapter）
@@ -108,6 +108,16 @@ const session = await getIronSession<SessionData>(await cookies(), sessionOption
 - `app/(portfolio)/page.tsx` → URL `/`（路由组不生成 URL 前缀）
 - `app/admin/chat/page.tsx` → URL `/admin/chat`（真实目录生成 URL）
 - Middleware matcher 对应真实 URL，与路由组括号名无关
+
+### Tailwind CSS v4 规范
+
+- **暗色主题**：`<html className="dark">`，`@custom-variant dark (&:where(.dark, .dark *))` 同时匹配根元素及其子元素
+- **语义 token**：一律用 `bg-background`、`border-border`、`text-foreground`、`text-muted-foreground`、`text-destructive` 等，禁止直接用 `zinc-*` 原始颜色
+- **动画 token**：在 `@theme { --animate-*; @keyframes }` 中定义，直接用 `animate-*` 工具类，不手写 `.animate-xxx` 类
+- **`size-*` 简写**：等宽高时用 `size-n` 代替 `w-n h-n`
+- **无任意单位**：`w-[600px]` → `w-150`（÷4），`min-h-[44px]` → `min-h-11`，`max-w-[200px]` → `max-w-50`
+- **渐变写法**：`bg-linear-to-b`（非 `bg-gradient-to-b`）
+- **透明度简写**：`bg-white/2`（非 `bg-white/[0.02]`）
 
 ### AI 提供商安全
 - API Key 只在服务端 Route Handler 中读取，`GET /api/providers` 不返回 apiKey
