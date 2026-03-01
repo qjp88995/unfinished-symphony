@@ -862,6 +862,7 @@ export default function ChatPage() {
     // 乐观更新 UI
     setDisplayItems([]);
     setMessages([]);
+    prevMsgCountRef.current = 0;
 
     try {
       await fetch("/api/chat/history", { method: "DELETE" });
@@ -951,6 +952,7 @@ export default function ChatPage() {
               <Button
                 variant="ghost"
                 size="sm"
+                disabled={isLoading}
                 className="text-[10px] font-mono text-muted-foreground hover:text-destructive gap-1.5 h-7"
               >
                 <Trash2 className="size-3" />
