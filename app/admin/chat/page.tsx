@@ -192,16 +192,30 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const ALLOWED_MIME_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/avif",
+  ];
+
   async function uploadImage(file: File): Promise<string> {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const tokenRes = await fetch(
       `/api/upload/token?ext=${encodeURIComponent(ext)}`,
     );
+    const tokenData = (await tokenRes.json().catch(() => ({}))) as {
+      token?: string;
+      key?: string;
+      domain?: string;
+      uploadUrl?: string;
+      error?: string;
+    };
     if (!tokenRes.ok) {
-      const data = await tokenRes.json().catch(() => ({}));
-      throw new Error((data as { error?: string }).error ?? "获取上传凭证失败");
+      throw new Error(tokenData.error ?? "获取上传凭证失败");
     }
-    const { token, key, domain, uploadUrl } = (await tokenRes.json()) as {
+    const { token, key, domain, uploadUrl } = tokenData as {
       token: string;
       key: string;
       domain: string;
@@ -223,6 +237,11 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
+      return;
+    }
 
     if (file.size > 5 * 1024 * 1024) {
       setError("图片大小不能超过 5MB");
@@ -249,6 +268,11 @@ export default function ChatPage() {
     e.target.value = "";
     if (!file || !projectId) return;
 
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
+      return;
+    }
+
     if (file.size > 5 * 1024 * 1024) {
       setError("图片大小不能超过 5MB");
       return;
@@ -258,11 +282,17 @@ export default function ChatPage() {
     setError("");
     try {
       const url = await uploadImage(file);
-      await fetch(`/api/projects/${projectId}`, {
+      const updateRes = await fetch(`/api/projects/${projectId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: url }),
       });
+      if (!updateRes.ok) {
+        const body = (await updateRes.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(body.error ?? "更新项目封面失败");
+      }
       // SSE will push the updated project list automatically
     } catch (err) {
       setError(err instanceof Error ? err.message : "上传失败");
@@ -473,7 +503,7 @@ export default function ChatPage() {
               variant="ghost"
               size="icon"
               onClick={() => chatFileInputRef.current?.click()}
-              disabled={isUploading || isLoading}
+              disabled={isUploading || isLoading || uploadingProjectId !== null}
               title="上传图片"
             >
               {isUploading ? (
