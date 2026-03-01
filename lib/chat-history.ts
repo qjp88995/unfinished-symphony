@@ -31,6 +31,12 @@ function coreMessagesToParts(messages: ModelMessage[]): object[] {
       for (const c of msg.content) {
         if (c.type === "text" && c.text) {
           parts.push({ type: "text", text: c.text });
+        } else if (c.type === "reasoning" && c.text) {
+          parts.push({
+            type: "reasoning",
+            text: c.text,
+            state: "done" as const,
+          });
         } else if (c.type === "tool-call") {
           const result = toolResults.get(c.toolCallId);
           parts.push({
