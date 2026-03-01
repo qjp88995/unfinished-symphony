@@ -8,3 +8,8 @@ export async function GET() {
 
   return Response.json({ success: true, data: records });
 }
+
+export async function DELETE() {
+  await prisma.chatRecord.deleteMany({});
+  return Response.json({ success: true });
+}
