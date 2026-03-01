@@ -859,15 +859,25 @@ export default function ChatPage() {
   }
 
   async function handleClearAll() {
+    // 保存快照以便失败时恢复
+    const prevDisplayItems = displayItems;
+    const prevMessages = messages;
+    const prevMsgCount = prevMsgCountRef.current;
+
     // 乐观更新 UI
     setDisplayItems([]);
     setMessages([]);
     prevMsgCountRef.current = 0;
 
     try {
-      await fetch("/api/chat/history", { method: "DELETE" });
+      const res = await fetch("/api/chat/history", { method: "DELETE" });
+      if (!res.ok) throw new Error("清空失败");
     } catch {
-      // 静默失败
+      // 恢复状态
+      setDisplayItems(prevDisplayItems);
+      setMessages(prevMessages);
+      prevMsgCountRef.current = prevMsgCount;
+      setUploadError("清空历史记录失败，请重试");
     }
   }
 
