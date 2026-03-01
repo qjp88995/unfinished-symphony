@@ -3,6 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
+import { ImagePlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -420,6 +421,13 @@ export default function ChatPage() {
         {/* Input */}
         <div className="border-t border-border p-4 shrink-0">
           <form onSubmit={handleSubmit} className="flex gap-3 items-end">
+            <input
+              ref={chatFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleChatFileChange}
+            />
             <Textarea
               ref={inputRef}
               value={input}
@@ -429,6 +437,20 @@ export default function ChatPage() {
               className="flex-1 bg-input border-input text-foreground placeholder:text-muted-foreground resize-none min-h-11 max-h-32"
               rows={1}
             />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => chatFileInputRef.current?.click()}
+              disabled={isUploading || isLoading}
+              title="上传图片"
+            >
+              {isUploading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <ImagePlus className="size-4" />
+              )}
+            </Button>
             <Button type="submit" disabled={isLoading || !input.trim()}>
               发送
             </Button>
