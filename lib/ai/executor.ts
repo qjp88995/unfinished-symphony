@@ -2,28 +2,63 @@
 import { prisma } from "@/lib/db";
 import { emitProjectChange } from "@/lib/project-events";
 
-type ToolName =
-  | "list_projects"
-  | "create_project"
-  | "update_project"
-  | "delete_project"
-  | "set_featured"
-  | "reorder_projects"
-  | "list_providers"
-  | "create_provider"
-  | "update_provider"
-  | "delete_provider"
-  | "set_default_provider";
+// 每个工具的参数类型
+type ToolParams = {
+  list_projects: { featured?: boolean };
+  create_project: {
+    title: string;
+    description: string;
+    techStack?: string[];
+    imageUrl?: string | null;
+    liveUrl?: string | null;
+    repoUrl?: string | null;
+    featured?: boolean;
+    order?: number;
+  };
+  update_project: {
+    id: string;
+    title?: string;
+    description?: string;
+    techStack?: string[];
+    imageUrl?: string | null;
+    liveUrl?: string | null;
+    repoUrl?: string | null;
+    featured?: boolean;
+    order?: number;
+  };
+  delete_project: { id: string };
+  set_featured: { ids: string[]; featured: boolean };
+  reorder_projects: { orders: { id: string; order: number }[] };
+  list_providers: Record<string, never>;
+  create_provider: {
+    name: string;
+    apiKey: string;
+    model: string;
+    baseUrl?: string | null;
+    isDefault?: boolean;
+  };
+  update_provider: {
+    id: string;
+    name?: string;
+    apiKey?: string;
+    model?: string;
+    baseUrl?: string | null;
+    isDefault?: boolean;
+  };
+  delete_provider: { id: string };
+  set_default_provider: { id: string };
+};
 
-export async function executeToolCall(
-  name: ToolName,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  params: any,
+type ToolName = keyof ToolParams;
+
+export async function executeToolCall<T extends ToolName>(
+  name: T,
+  params: ToolParams[T],
 ): Promise<unknown> {
   switch (name) {
     case "list_projects": {
-      const where =
-        params.featured !== undefined ? { featured: params.featured } : {};
+      const p = params as ToolParams["list_projects"];
+      const where = p.featured !== undefined ? { featured: p.featured } : {};
       const projects = await prisma.project.findMany({
         where,
         orderBy: [
@@ -36,7 +71,7 @@ export async function executeToolCall(
     }
 
     case "create_project": {
-      const { techStack, ...rest } = params;
+      const { techStack, ...rest } = params as ToolParams["create_project"];
       const project = await prisma.project.create({
         data: {
           ...rest,
@@ -50,7 +85,7 @@ export async function executeToolCall(
     }
 
     case "update_project": {
-      const { id, techStack, ...rest } = params;
+      const { id, techStack, ...rest } = params as ToolParams["update_project"];
       const data: Record<string, unknown> = { ...rest };
       if (techStack !== undefined) {
         data.techStack = JSON.stringify(techStack);
@@ -63,38 +98,38 @@ export async function executeToolCall(
     }
 
     case "delete_project": {
-      await prisma.project.delete({ where: { id: params.id } });
+      const { id } = params as ToolParams["delete_project"];
+      await prisma.project.delete({ where: { id } });
       emitProjectChange().catch((err: unknown) =>
         console.error("[executor] emitProjectChange failed:", err),
       );
-      return { deleted: true, id: params.id };
+      return { deleted: true, id };
     }
 
     case "set_featured": {
+      const { ids, featured } = params as ToolParams["set_featured"];
       await prisma.project.updateMany({
-        where: { id: { in: params.ids } },
-        data: { featured: params.featured },
+        where: { id: { in: ids } },
+        data: { featured },
       });
       emitProjectChange().catch((err: unknown) =>
         console.error("[executor] emitProjectChange failed:", err),
       );
-      return { updated: true, count: params.ids.length };
+      return { updated: true, count: ids.length };
     }
 
     case "reorder_projects": {
-      const orders = (params.orders as { id: string; order: number }[]).slice(
-        0,
-        100,
-      );
+      const { orders } = params as ToolParams["reorder_projects"];
+      const capped = orders.slice(0, 100);
       await prisma.$transaction(
-        orders.map(({ id, order }) =>
+        capped.map(({ id, order }) =>
           prisma.project.update({ where: { id }, data: { order } }),
         ),
       );
       emitProjectChange().catch((err: unknown) =>
         console.error("[executor] emitProjectChange failed:", err),
       );
-      return { reordered: true, count: orders.length };
+      return { reordered: true, count: capped.length };
     }
 
     case "list_providers": {
@@ -112,15 +147,16 @@ export async function executeToolCall(
     }
 
     case "create_provider": {
-      if (params.isDefault) {
+      const p = params as ToolParams["create_provider"];
+      if (p.isDefault) {
         await prisma.aIProvider.updateMany({ data: { isDefault: false } });
       }
-      const provider = await prisma.aIProvider.create({ data: params });
+      const provider = await prisma.aIProvider.create({ data: p });
       return { created: true, id: provider.id, name: provider.name };
     }
 
     case "update_provider": {
-      const { id, ...data } = params;
+      const { id, ...data } = params as ToolParams["update_provider"];
       if (data.isDefault === true) {
         await prisma.aIProvider.updateMany({ data: { isDefault: false } });
       }
@@ -129,17 +165,19 @@ export async function executeToolCall(
     }
 
     case "delete_provider": {
-      await prisma.aIProvider.delete({ where: { id: params.id } });
-      return { deleted: true, id: params.id };
+      const { id } = params as ToolParams["delete_provider"];
+      await prisma.aIProvider.delete({ where: { id } });
+      return { deleted: true, id };
     }
 
     case "set_default_provider": {
+      const { id } = params as ToolParams["set_default_provider"];
       await prisma.aIProvider.updateMany({ data: { isDefault: false } });
       await prisma.aIProvider.update({
-        where: { id: params.id },
+        where: { id },
         data: { isDefault: true },
       });
-      return { updated: true, id: params.id };
+      return { updated: true, id };
     }
 
     default:
