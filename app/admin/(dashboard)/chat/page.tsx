@@ -105,12 +105,21 @@ function parseTechStack(techStack: string): string[] {
 }
 
 /** Parse <project id="...">@name</project> tags in user messages */
-function renderUserContent(content: string): React.ReactNode {
+function renderUserContent(
+  content: string,
+  isUserMessage = false,
+): React.ReactNode {
   const PROJECT_TAG = /<project id="([^"]*)">(.*?)<\/project>/g;
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let key = 0;
   let match: RegExpExecArray | null;
+
+  // Inside a user bubble (bg-primary), use foreground-based colors so the
+  // chip is legible against the primary background.
+  const chipClass = isUserMessage
+    ? "inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono font-bold text-xs bg-primary-foreground/20 text-primary-foreground border border-primary-foreground/30 mx-0.5"
+    : "inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono font-bold text-xs bg-primary/10 text-primary border border-primary/20 mx-0.5";
 
   while ((match = PROJECT_TAG.exec(content)) !== null) {
     if (match.index > lastIndex) {
@@ -121,10 +130,7 @@ function renderUserContent(content: string): React.ReactNode {
       );
     }
     parts.push(
-      <span
-        key={key++}
-        className="inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono font-bold text-xs bg-primary/10 text-primary border border-primary/20 mx-0.5"
-      >
+      <span key={key++} className={chipClass}>
         {match[2]}
       </span>,
     );
@@ -764,7 +770,7 @@ export default function ChatPage() {
                   </div>
                 ) : (
                   <p className="font-mono text-xs tracking-wide">
-                    {renderUserContent(m.content)}
+                    {renderUserContent(m.content, true)}
                   </p>
                 )}
               </div>
