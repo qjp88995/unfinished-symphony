@@ -1,4 +1,6 @@
+// lib/ai/executor.ts
 import { prisma } from "@/lib/db";
+import { projectEvents } from "@/lib/project-events";
 
 type ToolName =
   | "list_projects"
@@ -12,6 +14,13 @@ type ToolName =
   | "update_provider"
   | "delete_provider"
   | "set_default_provider";
+
+async function emitProjectChange() {
+  const projects = await prisma.project.findMany({
+    orderBy: [{ featured: "desc" }, { order: "asc" }, { createdAt: "desc" }],
+  });
+  projectEvents.emit("project-changed", projects);
+}
 
 export async function executeToolCall(
   name: ToolName,
@@ -41,6 +50,7 @@ export async function executeToolCall(
           techStack: JSON.stringify(techStack ?? []),
         },
       });
+      await emitProjectChange();
       return { created: true, project };
     }
 
@@ -51,11 +61,13 @@ export async function executeToolCall(
         data.techStack = JSON.stringify(techStack);
       }
       const project = await prisma.project.update({ where: { id }, data });
+      await emitProjectChange();
       return { updated: true, project };
     }
 
     case "delete_project": {
       await prisma.project.delete({ where: { id: params.id } });
+      await emitProjectChange();
       return { deleted: true, id: params.id };
     }
 
@@ -64,6 +76,7 @@ export async function executeToolCall(
         where: { id: { in: params.ids } },
         data: { featured: params.featured },
       });
+      await emitProjectChange();
       return { updated: true, count: params.ids.length };
     }
 
@@ -77,6 +90,7 @@ export async function executeToolCall(
           prisma.project.update({ where: { id }, data: { order } }),
         ),
       );
+      await emitProjectChange();
       return { reordered: true, count: orders.length };
     }
 
