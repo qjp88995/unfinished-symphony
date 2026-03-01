@@ -1,18 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getIronSession } from "iron-session";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
-import { projectEvents } from "@/lib/project-events";
+import { sessionOptions, type SessionData } from "@/lib/session";
+import { emitProjectChange } from "@/lib/project-events";
 
-async function emitProjectChange() {
-  const projects = await prisma.project.findMany({
-    orderBy: [{ featured: "desc" }, { order: "asc" }, { createdAt: "desc" }],
-  });
-  projectEvents.emit("project-changed", projects);
+async function requireAuth() {
+  const session = await getIronSession<SessionData>(
+    await cookies(),
+    sessionOptions,
+  );
+  return session.isAuthenticated ?? false;
 }
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!(await requireAuth())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   const body = await req.json();
 
@@ -31,18 +39,58 @@ export async function PUT(
   if (body.featured !== undefined) data.featured = body.featured;
   if (body.order !== undefined) data.order = body.order;
 
-  const project = await prisma.project.update({ where: { id }, data });
-  emitProjectChange().catch((err: unknown) =>
-    console.error("[projects/[id]] emitProjectChange failed:", err),
-  );
-  return NextResponse.json({ success: true, data: project });
+  try {
+    const project = await prisma.project.update({ where: { id }, data });
+    emitProjectChange().catch((err: unknown) =>
+      console.error("[projects/[id]] emitProjectChange failed:", err),
+    );
+    return NextResponse.json({ success: true, data: project });
+  } catch (err: unknown) {
+    const isNotFound =
+      err instanceof Error && err.message.includes("Record to update not found");
+    if (isNotFound) {
+      return NextResponse.json(
+        { success: false, error: "Project not found" },
+        { status: 404 },
+      );
+    }
+    console.error("[PUT /api/projects/[id]]", err);
+    return NextResponse.json(
+      { success: false, error: "Failed to update project" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!(await requireAuth())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
-  await prisma.project.delete({ where: { id } });
-  return NextResponse.json({ success: true });
+
+  try {
+    await prisma.project.delete({ where: { id } });
+    emitProjectChange().catch((err: unknown) =>
+      console.error("[projects/[id]] emitProjectChange failed:", err),
+    );
+    return NextResponse.json({ success: true });
+  } catch (err: unknown) {
+    const isNotFound =
+      err instanceof Error && err.message.includes("Record to delete does not exist");
+    if (isNotFound) {
+      return NextResponse.json(
+        { success: false, error: "Project not found" },
+        { status: 404 },
+      );
+    }
+    console.error("[DELETE /api/projects/[id]]", err);
+    return NextResponse.json(
+      { success: false, error: "Failed to delete project" },
+      { status: 500 },
+    );
+  }
 }

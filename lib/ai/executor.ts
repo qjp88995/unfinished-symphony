@@ -1,6 +1,6 @@
 // lib/ai/executor.ts
 import { prisma } from "@/lib/db";
-import { projectEvents } from "@/lib/project-events";
+import { emitProjectChange } from "@/lib/project-events";
 
 type ToolName =
   | "list_projects"
@@ -14,13 +14,6 @@ type ToolName =
   | "update_provider"
   | "delete_provider"
   | "set_default_provider";
-
-async function emitProjectChange() {
-  const projects = await prisma.project.findMany({
-    orderBy: [{ featured: "desc" }, { order: "asc" }, { createdAt: "desc" }],
-  });
-  projectEvents.emit("project-changed", projects);
-}
 
 export async function executeToolCall(
   name: ToolName,
