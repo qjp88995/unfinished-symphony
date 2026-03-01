@@ -1,4 +1,5 @@
 // app/api/chat/history/route.ts
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
 export async function GET() {
@@ -10,6 +11,14 @@ export async function GET() {
 }
 
 export async function DELETE() {
-  await prisma.chatRecord.deleteMany({});
-  return Response.json({ success: true });
+  try {
+    await prisma.chatRecord.deleteMany({});
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[DELETE /api/chat/history]", err);
+    return NextResponse.json(
+      { success: false, error: "Failed to clear history" },
+      { status: 500 },
+    );
+  }
 }
