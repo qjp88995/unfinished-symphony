@@ -30,23 +30,23 @@ export default async function PortfolioPage() {
         {/* Modern Sci-Fi Background effects */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           {/* Cyber grid pattern */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-primary)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-primary)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,#000_20%,transparent_100%)] opacity-[0.03] dark:opacity-[0.15]"></div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-primary)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-primary)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,#000_20%,transparent_100%)] opacity-[0.03] dark:opacity-15"></div>
 
           {/* Scanline overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,var(--color-background)_50%)] bg-[size:100%_4px] opacity-10 mix-blend-overlay"></div>
           <div className="absolute h-1 w-full bg-primary/20 animate-scanline blur-[2px]"></div>
 
           {/* Glowing orbs/nodes */}
-          <div className="absolute top-1/3 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[30vw] h-[30vw] rounded-full bg-primary/20 blur-[100px] mix-blend-screen opacity-50 animate-pulse duration-[8s]" />
-          <div className="absolute bottom-1/3 right-1/4 w-[25vw] h-[25vw] rounded-full bg-accent/20 blur-[80px] mix-blend-screen opacity-50" />
+          <div className="absolute top-1/3 left-1/4 -translate-x-1/2 -translate-y-1/2 size-[30vw] rounded-full bg-primary/20 blur-[100px] mix-blend-screen opacity-50 animate-pulse duration-[8s]" />
+          <div className="absolute bottom-1/3 right-1/4 size-[25vw] rounded-full bg-accent/20 blur-[80px] mix-blend-screen opacity-50" />
         </div>
 
         <div className="animate-fade-in space-y-10 max-w-4xl relative z-10 pt-20">
           <div className="inline-flex items-center gap-3 border border-primary/20 dark:border-primary/30 bg-background/80 dark:bg-background/50 px-5 py-2 text-xs font-mono text-primary dark:text-primary backdrop-blur-md shadow-[0_0_10px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,243,255,0.15)] uppercase tracking-widest relative overflow-hidden group">
             <div className="absolute inset-0 bg-primary/10 w-0 group-hover:w-full transition-all duration-500 ease-out"></div>
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex h-2 w-2 bg-primary"></span>
+            <span className="relative flex size-2">
+              <span className="animate-ping absolute inline-flex size-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex size-2 bg-primary"></span>
             </span>
             <span className="relative z-10">
               [SYS.STATUS]: ONLINE_AND_READY
@@ -58,7 +58,7 @@ export default async function PortfolioPage() {
               创意
             </span>
             <br />
-            <span className="relative inline-block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-primary/80 via-accent/80 to-primary/80 dark:from-primary dark:via-accent dark:to-primary animate-gradient hover:animate-glitch drop-shadow-[0_0_8px_rgba(var(--color-primary),0.3)] dark:drop-shadow-[0_0_15px_var(--color-primary)] opacity-90">
+            <span className="relative inline-block mt-2 text-transparent bg-clip-text bg-linear-to-r from-primary/80 via-accent/80 to-primary/80 dark:from-primary dark:via-accent dark:to-primary animate-gradient hover:animate-glitch drop-shadow-[0_0_8px_rgba(var(--color-primary),0.3)] dark:drop-shadow-[0_0_15px_var(--color-primary)] opacity-90">
               开发者
             </span>
           </h1>
@@ -95,8 +95,8 @@ export default async function PortfolioPage() {
           <span className="text-[10px] font-mono text-primary tracking-[0.3em] uppercase">
             Scroll
           </span>
-          <div className="w-[1px] h-12 bg-gradient-to-b from-primary to-transparent relative overflow-hidden">
-            <div className="w-full h-1/3 bg-foreground absolute top-0 animate-[scanline_2s_ease-in-out_infinite]"></div>
+          <div className="w-px h-12 bg-linear-to-b from-primary to-transparent relative overflow-hidden">
+            <div className="w-full h-1/3 bg-foreground absolute top-0 animate-scanline-fast"></div>
           </div>
         </div>
       </section>
@@ -117,8 +117,8 @@ export default async function PortfolioPage() {
                   精选作品
                 </h2>
               </div>
-              <div className="hidden md:flex h-[1px] flex-1 bg-border ml-8 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1/3 h-full bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-[scanline_3s_ease-in-out_infinite_alternate]"></div>
+              <div className="hidden md:flex h-px flex-1 bg-border ml-8 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1/3 h-full bg-linear-to-r from-transparent via-primary/50 to-transparent animate-scanline-alt"></div>
               </div>
             </div>
             <div className="flex flex-col gap-12">
@@ -140,8 +140,8 @@ export default async function PortfolioPage() {
                   更多项目
                 </h2>
               </div>
-              <div className="hidden md:flex h-[1px] flex-1 bg-border ml-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-1/4 h-full bg-gradient-to-l from-transparent via-muted-foreground/30 to-transparent"></div>
+              <div className="hidden md:flex h-px flex-1 bg-border ml-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-1/4 h-full bg-linear-to-l from-transparent via-muted-foreground/30 to-transparent"></div>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -158,9 +158,9 @@ export default async function PortfolioPage() {
             <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-muted-foreground"></div>
             <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-muted-foreground"></div>
 
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-none border border-border bg-background mb-6 shadow-inner">
+            <div className="inline-flex items-center justify-center size-16 rounded-none border border-border bg-background mb-6 shadow-inner">
               <svg
-                className="w-8 h-8 text-muted-foreground"
+                className="size-8 text-muted-foreground"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -190,7 +190,7 @@ function FeaturedProjectCard({ project }: { project: ProjectModel }) {
   const techs = parseTechs(project.techStack);
 
   return (
-    <div className="group relative border border-border bg-card/80 dark:bg-card/50 overflow-hidden transition-all duration-500 hover:border-primary/50 hover:bg-card hover:shadow-xl dark:hover:shadow-[0_0_40px_rgba(0,243,255,0.15)] flex flex-col lg:flex-row min-h-[400px] shadow-sm">
+    <div className="group relative border border-border bg-card/80 dark:bg-card/50 overflow-hidden transition-all duration-500 hover:border-primary/50 hover:bg-card hover:shadow-xl dark:hover:shadow-[0_0_40px_rgba(0,243,255,0.15)] flex flex-col lg:flex-row min-h-100 shadow-sm">
       {/* Tech corner accents */}
       <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary/40 dark:border-primary opacity-50 group-hover:opacity-100 transition-opacity z-20"></div>
       <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary/40 dark:border-primary opacity-50 group-hover:opacity-100 transition-opacity z-20"></div>
@@ -213,21 +213,21 @@ function FeaturedProjectCard({ project }: { project: ProjectModel }) {
           </div>
         )}
         {/* Holographic overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-background pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-t from-background via-transparent to-transparent lg:bg-linear-to-r lg:from-transparent lg:to-background pointer-events-none" />
         <div className="absolute inset-0 bg-primary/10 mix-blend-overlay opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
       </div>
 
       {/* Content container */}
-      <div className="relative w-full lg:w-[45%] p-8 sm:p-12 lg:p-14 flex flex-col justify-center backdrop-blur-md z-10 -mt-12 lg:mt-0 lg:-ml-12 border-t lg:border-t-0 lg:border-l border-border bg-gradient-to-b lg:bg-gradient-to-r from-background/90 to-background/50 lg:from-background lg:via-background/90">
+      <div className="relative w-full lg:w-[45%] p-8 sm:p-12 lg:p-14 flex flex-col justify-center backdrop-blur-md z-10 -mt-12 lg:mt-0 lg:-ml-12 border-t lg:border-t-0 lg:border-l border-border bg-linear-to-b lg:bg-linear-to-r from-background/90 to-background/50 lg:from-background lg:via-background/90">
         <div className="space-y-6">
           <div>
             <div className="flex items-center gap-3 mb-4">
               <span className="px-3 py-1 bg-accent/10 text-accent font-mono text-[10px] sm:text-xs font-bold tracking-widest border border-accent/30 shadow-[0_0_10px_rgba(139,92,246,0.2)] uppercase">
                 FEAT_PRJ
               </span>
-              <div className="h-[1px] flex-1 bg-gradient-to-r from-accent/50 to-transparent"></div>
+              <div className="h-px flex-1 bg-linear-to-r from-accent/50 to-transparent"></div>
             </div>
-            <h3 className="text-3xl sm:text-4xl font-black text-foreground group-hover:text-transparent bg-clip-text bg-gradient-to-r from-foreground to-foreground group-hover:from-primary group-hover:to-accent transition-all duration-500 uppercase tracking-tight">
+            <h3 className="text-3xl sm:text-4xl font-black text-foreground group-hover:text-transparent bg-clip-text bg-linear-to-r from-foreground to-foreground group-hover:from-primary group-hover:to-accent transition-all duration-500 uppercase tracking-tight">
               {project.title}
             </h3>
           </div>
@@ -285,7 +285,7 @@ function RegularProjectCard({ project }: { project: ProjectModel }) {
       {/* Corner decorations */}
       <div className="absolute top-0 right-0 w-8 h-8 bg-[linear-gradient(225deg,var(--color-primary)_50%,transparent_50%)] opacity-0 group-hover:opacity-30 dark:group-hover:opacity-50 transition-opacity z-20"></div>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
 
       {/* Image header */}
       <div className="relative w-full aspect-[16/10] overflow-hidden bg-background border-b border-border">
