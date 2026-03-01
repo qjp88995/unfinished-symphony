@@ -5,6 +5,7 @@ import path from "path";
 const projectRoot = process.env.INIT_CWD ?? process.cwd();
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["qiniu", "urllib", "proxy-agent"],
   turbopack: {
     root: projectRoot,
     resolveAlias: {
