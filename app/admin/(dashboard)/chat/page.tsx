@@ -433,39 +433,20 @@ export default function ChatPage() {
     if (role === "user") {
       for (let i = idx + 1; i < items.length; i++) {
         if (items[i].kind === "clear") break;
+        const candidate = items[i];
         if (
-          items[i].kind === "message" &&
-          (
-            items[i] as {
-              kind: "message";
-              message: { role: string; id: string };
-            }
-          ).message.role === "assistant"
+          candidate.kind === "message" &&
+          candidate.message.role === "assistant"
         ) {
-          return [
-            targetId,
-            (items[i] as { kind: "message"; message: { id: string } }).message
-              .id,
-          ];
+          return [targetId, candidate.message.id];
         }
       }
     } else {
       for (let i = idx - 1; i >= 0; i--) {
         if (items[i].kind === "clear") break;
-        if (
-          items[i].kind === "message" &&
-          (
-            items[i] as {
-              kind: "message";
-              message: { role: string; id: string };
-            }
-          ).message.role === "user"
-        ) {
-          return [
-            (items[i] as { kind: "message"; message: { id: string } }).message
-              .id,
-            targetId,
-          ];
+        const candidate = items[i];
+        if (candidate.kind === "message" && candidate.message.role === "user") {
+          return [candidate.message.id, targetId];
         }
       }
     }
@@ -1006,7 +987,8 @@ export default function ChatPage() {
                   {/* 删除按钮：hover 时显示 */}
                   <button
                     onClick={() => void handleDeleteMessage(m.id)}
-                    className="absolute -top-2 -right-2 size-5 rounded-full bg-background border border-border flex items-center justify-center opacity-0 group-hover/msg:opacity-100 transition-opacity hover:bg-destructive hover:border-destructive hover:text-destructive-foreground z-10"
+                    disabled={isLoading}
+                    className="absolute -top-2 -right-2 size-5 rounded-full bg-background border border-border flex items-center justify-center opacity-0 group-hover/msg:opacity-100 transition-opacity hover:bg-destructive hover:border-destructive hover:text-destructive-foreground z-10 disabled:cursor-not-allowed"
                     title="删除消息"
                   >
                     <Trash2 className="size-2.5" />
