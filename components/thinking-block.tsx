@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useId } from "react";
+import { useState, useId } from "react";
 import { ChevronDown, ChevronRight, Brain } from "lucide-react";
 
 interface ThinkingBlockProps {
@@ -10,10 +10,10 @@ interface ThinkingBlockProps {
 
 export function ThinkingBlock({ content, done }: ThinkingBlockProps) {
   const regionId = useId();
-  const [open, setOpen] = useState(true);
-  useEffect(() => {
-    if (done) setOpen(false);
-  }, [done]);
+  // Start open while streaming; collapse when done unless user already toggled
+  const [userToggled, setUserToggled] = useState(false);
+  const [manualOpen, setManualOpen] = useState(true);
+  const open = userToggled ? manualOpen : !done;
 
   return (
     <div className="mb-3 border border-border/40 rounded-lg overflow-hidden text-xs font-mono">
@@ -21,7 +21,10 @@ export function ThinkingBlock({ content, done }: ThinkingBlockProps) {
         type="button"
         aria-expanded={open}
         aria-controls={regionId}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setUserToggled(true);
+          setManualOpen((v) => !v);
+        }}
         className="w-full flex items-center gap-2 px-3 py-2 bg-muted/20 hover:bg-muted/40 transition-colors text-muted-foreground"
       >
         {open ? (
