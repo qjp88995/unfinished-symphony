@@ -4,10 +4,11 @@
 
 ## 功能
 
-- **公开展示**：暗色主题，渐变光晕背景，作品卡片悬停发光效果
-- **AI 对话管理**：用自然语言增删改查作品，支持批量操作和精选标记
+- **公开展示**：暗/亮主题切换，渐变光晕背景，作品卡片悬停发光效果
+- **AI 对话管理**：用自然语言增删改查作品，支持批量操作和精选标记；支持 @project 提及和图片粘贴
 - **多模型支持**：可配置任意 OpenAI 兼容的 API（包括 Anthropic、本地模型等）
 - **简单认证**：密码保护后台，httpOnly cookie session
+- **图床集成**：七牛云存储，从剪贴板粘贴图片并自动上传
 
 ## 快速开始
 
@@ -26,12 +27,19 @@ pnpm prisma generate
 DATABASE_URL="file:./dev.db"
 ADMIN_PASSWORD_HASH="<见下方生成方式>"
 COOKIE_SECRET="<见下方生成方式>"
+
+# 七牛云图床（可选）
+QINIU_ACCESS_KEY="<AccessKey>"
+QINIU_SECRET_KEY="<SecretKey>"
+QINIU_BUCKET="<存储空间名>"
+QINIU_CDN_DOMAIN="https://your-cdn-domain.com"
+QINIU_UPLOAD_URL="https://up.qiniup.com"
 ```
 
 生成密码哈希：
 
 ```bash
-node -e "require('bcryptjs').hash('你的密码', 12).then(console.log)"
+node -e "require('bcryptjs').hash('你的密码',12).then(h=>process.stdout.write(h.replaceAll('\$','\\\$')+'\n'))"
 ```
 
 生成 Cookie 密钥（至少 32 个字符）：
@@ -60,6 +68,7 @@ pnpm dev
 |------|------|
 | `/` | 公开作品集展示 |
 | `/admin/login` | 后台登录 |
+| `/admin` | 自动跳转到 `/admin/chat` |
 | `/admin/chat` | AI 对话管理界面 |
 | `/admin/settings` | AI 提供商配置 |
 
@@ -89,10 +98,12 @@ pnpm dev
 ## 技术栈
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript 5**
-- **Tailwind CSS 4** + **shadcn/ui**
+- **Tailwind CSS 4** + **shadcn/ui** + **next-themes**（暗/亮主题）
+- **Tiptap**（富文本编辑器，@mention + 图片粘贴）
 - **Vercel AI SDK v6**（Function Calling，流式输出）
 - **Prisma 7** + **SQLite**（better-sqlite3 driver adapter）
 - **iron-session v8**（加密 cookie 认证）
+- **七牛云 SDK**（图片上传）
 
 ## 常用命令
 
