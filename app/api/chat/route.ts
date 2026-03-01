@@ -16,12 +16,22 @@ Always confirm destructive actions (delete) with a brief acknowledgment.
 Respond in the same language the user uses.
 When a user message contains <project id="SOME_ID">@ProjectName</project>, use the id attribute directly as the project ID in tool calls — do not search for the project by name.`;
 
+// Validate text parts to enforce per-part size limit.
+const textPartSchema = z.object({
+  type: z.literal("text"),
+  text: z.string().max(10_000),
+});
+
+// Permissive schema: accept UIMessage shape from useChat, enforce size limits.
+// AI SDK v6 UIMessage uses `parts` (not `content`), so `content` is omitted here.
 // Restrict roles to user/assistant only — system role must never come from the client.
 const uiMessageSchema = z.object({
-  id: z.string().optional(),
+  id: z.string(),
   role: z.enum(["user", "assistant"]),
-  content: z.string().max(10_000),
-  parts: z.array(z.unknown()).max(50).optional(),
+  parts: z
+    .array(z.union([textPartSchema, z.record(z.string(), z.unknown())]))
+    .max(50),
+  metadata: z.unknown().optional(),
   createdAt: z.union([z.string(), z.date()]).optional(),
 });
 
