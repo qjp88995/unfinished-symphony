@@ -2,12 +2,16 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useEditor, EditorContent, ReactRenderer } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Mention from "@tiptap/extension-mention";
+import Placeholder from "@tiptap/extension-placeholder";
+import tippy, { type Instance as TippyInstance } from "tippy.js";
 import ReactMarkdown from "react-markdown";
 import { ImagePlus, Loader2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import MentionList, { type MentionListRef } from "@/components/mention-list";
 
 interface Message {
   id: string;
@@ -48,13 +52,11 @@ async function cropAndCompress(file: File): Promise<File> {
 
   let cropW: number, cropH: number, cropX: number, cropY: number;
   if (srcRatio > targetRatio) {
-    // source is wider — crop horizontally, full height
     cropH = sh;
     cropW = sh * targetRatio;
     cropX = (sw - cropW) / 2;
     cropY = 0;
   } else {
-    // source is taller — crop vertically, full width
     cropW = sw;
     cropH = sw / targetRatio;
     cropX = 0;
@@ -66,26 +68,13 @@ async function cropAndCompress(file: File): Promise<File> {
   canvas.height = CROP_TARGET_H;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context unavailable");
-  ctx.drawImage(
-    bitmap,
-    cropX,
-    cropY,
-    cropW,
-    cropH,
-    0,
-    0,
-    CROP_TARGET_W,
-    CROP_TARGET_H,
-  );
+  ctx.drawImage(bitmap, cropX, cropY, cropW, cropH, 0, 0, CROP_TARGET_W, CROP_TARGET_H);
   bitmap.close();
 
   return new Promise<File>((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
-        if (!blob) {
-          reject(new Error("图片处理失败"));
-          return;
-        }
+        if (!blob) { reject(new Error("图片处理失败")); return; }
         resolve(new File([blob], "image.webp", { type: "image/webp" }));
       },
       "image/webp",
@@ -95,11 +84,46 @@ async function cropAndCompress(file: File): Promise<File> {
 }
 
 function parseTechStack(techStack: string): string[] {
-  try {
-    return JSON.parse(techStack) as string[];
-  } catch {
-    return [];
+  try { return JSON.parse(techStack) as string[]; }
+  catch { return []; }
+}
+
+/** Parse <project id="...">@name</project> tags in user messages */
+function renderUserContent(content: string): React.ReactNode {
+  const PROJECT_TAG = /<project id="([^"]*)">(.*?)<\/project>/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = PROJECT_TAG.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(
+        <span key={key++} className="whitespace-pre-wrap">
+          {content.slice(lastIndex, match.index)}
+        </span>,
+      );
+    }
+    parts.push(
+      <span
+        key={key++}
+        className="inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono font-bold text-xs bg-primary/10 text-primary border border-primary/20 mx-0.5"
+      >
+        {match[2]}
+      </span>,
+    );
+    lastIndex = match.index + match[0].length;
   }
+
+  if (lastIndex < content.length) {
+    parts.push(
+      <span key={key++} className="whitespace-pre-wrap">
+        {content.slice(lastIndex)}
+      </span>,
+    );
+  }
+
+  return parts.length > 0 ? parts : content;
 }
 
 function ProjectCard({
@@ -109,7 +133,7 @@ function ProjectCard({
   isUploading,
 }: {
   project: ProjectItem;
-  onSelect: (title: string) => void;
+  onSelect: (id: string, title: string) => void;
   onUpload: (projectId: string) => void;
   isUploading: boolean;
 }) {
@@ -120,7 +144,7 @@ function ProjectCard({
   return (
     <div
       className="group relative rounded-xl border border-border/40 bg-card/20 p-4 cursor-pointer hover:border-primary/40 hover:bg-card/50 transition-all duration-300 shadow-sm hover:shadow-md dark:shadow-none dark:hover:shadow-[0_0_15px_rgba(0,243,255,0.15)] flex flex-col backdrop-blur-sm"
-      onClick={() => onSelect(project.title)}
+      onClick={() => onSelect(project.id, project.title)}
     >
       {/* Tech corner accents */}
       <div className="absolute top-0 right-0 w-6 h-6 bg-[linear-gradient(225deg,var(--color-primary)_50%,transparent_50%)] opacity-0 group-hover:opacity-20 dark:group-hover:opacity-40 transition-opacity z-20 rounded-tr-xl"></div>
@@ -224,19 +248,19 @@ function ProjectCard({
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [isEditorEmpty, setIsEditorEmpty] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadingProjectId, setUploadingProjectId] = useState<string | null>(
-    null,
-  );
+  const [uploadingProjectId, setUploadingProjectId] = useState<string | null>(null);
   const chatFileInputRef = useRef<HTMLInputElement>(null);
   const projectFileInputRef = useRef<HTMLInputElement>(null);
   const uploadTargetProjectIdRef = useRef<string | null>(null);
+
+  // Ref to avoid stale closure in Tiptap's editorProps.handleKeyDown
+  const handleSubmitRef = useRef<() => void>(() => {});
 
   // Initial project load + SSE subscription for real-time updates
   useEffect(() => {
@@ -245,11 +269,8 @@ export default function ChatPage() {
     const es = new EventSource("/api/projects/events");
     es.addEventListener("project-changed", (e: MessageEvent<string>) => {
       sseHasFired = true;
-      try {
-        setProjects(JSON.parse(e.data) as ProjectItem[]);
-      } catch {
-        // ignore malformed event
-      }
+      try { setProjects(JSON.parse(e.data) as ProjectItem[]); }
+      catch { /* ignore malformed event */ }
     });
 
     fetch("/api/projects")
@@ -266,27 +287,18 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ── Image upload helpers ─────────────────────────────────────
+
   async function uploadImage(file: File): Promise<string> {
     const processed = await cropAndCompress(file);
     const ext = "webp";
-    const tokenRes = await fetch(
-      `/api/upload/token?ext=${encodeURIComponent(ext)}`,
-    );
+    const tokenRes = await fetch(`/api/upload/token?ext=${encodeURIComponent(ext)}`);
     const tokenData = (await tokenRes.json().catch(() => ({}))) as {
-      token?: string;
-      key?: string;
-      domain?: string;
-      uploadUrl?: string;
-      error?: string;
+      token?: string; key?: string; domain?: string; uploadUrl?: string; error?: string;
     };
-    if (!tokenRes.ok) {
-      throw new Error(tokenData.error ?? "获取上传凭证失败");
-    }
+    if (!tokenRes.ok) throw new Error(tokenData.error ?? "获取上传凭证失败");
     const { token, key, domain, uploadUrl } = tokenData as {
-      token: string;
-      key: string;
-      domain: string;
-      uploadUrl: string;
+      token: string; key: string; domain: string; uploadUrl: string;
     };
 
     const form = new FormData();
@@ -296,7 +308,6 @@ export default function ChatPage() {
 
     const upRes = await fetch(uploadUrl, { method: "POST", body: form });
     if (!upRes.ok) throw new Error("上传到七牛失败");
-
     return `${domain}/${key}`;
   }
 
@@ -304,22 +315,17 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-
     if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
       setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
       return;
     }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError("图片大小不能超过 5MB");
-      return;
-    }
+    if (file.size > 5 * 1024 * 1024) { setError("图片大小不能超过 5MB"); return; }
 
     setIsUploading(true);
     setError("");
     try {
       const url = await uploadImage(file);
-      setInput((prev) => (prev ? `${prev}\n${url}` : url));
+      editor?.chain().focus().insertContent(url + "\n").run();
     } catch (err) {
       setError(err instanceof Error ? err.message : "上传失败");
     } finally {
@@ -327,23 +333,16 @@ export default function ChatPage() {
     }
   }
 
-  async function handleProjectFileChange(
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) {
+  async function handleProjectFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     const projectId = uploadTargetProjectIdRef.current;
     e.target.value = "";
     if (!file || !projectId) return;
-
     if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
       setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
       return;
     }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError("图片大小不能超过 5MB");
-      return;
-    }
+    if (file.size > 5 * 1024 * 1024) { setError("图片大小不能超过 5MB"); return; }
 
     setUploadingProjectId(projectId);
     setError("");
@@ -355,9 +354,7 @@ export default function ChatPage() {
         body: JSON.stringify({ imageUrl: url }),
       });
       if (!updateRes.ok) {
-        const body = (await updateRes.json().catch(() => ({}))) as {
-          error?: string;
-        };
+        const body = (await updateRes.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? "更新项目封面失败");
       }
       // SSE will push the updated project list automatically
@@ -369,46 +366,165 @@ export default function ChatPage() {
     }
   }
 
-  function handleProjectSelect(title: string) {
-    setInput(`编辑项目「${title}」：`);
-    inputRef.current?.focus();
+  // ── Tiptap editor ────────────────────────────────────────────
+
+  const editor = useEditor({
+    immediatelyRender: false, // Required for Next.js SSR compatibility
+    extensions: [
+      StarterKit.configure({
+        // Disable block-level features not needed in a chat input
+        heading: false,
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
+        blockquote: false,
+        codeBlock: false,
+        horizontalRule: false,
+      }),
+      Placeholder.configure({
+        placeholder: "输入指令... (Enter 执行，Shift+Enter 换行)",
+      }),
+      Mention.configure({
+        HTMLAttributes: { class: "mention" },
+        renderText: ({ node }) =>
+          `<project id="${node.attrs.id as string}">@${node.attrs.label as string}</project>`,
+        suggestion: {
+          // Filter projects matching the query typed after @
+          items: ({ query }: { query: string }) =>
+            projects
+              .filter((p) =>
+                p.title.toLowerCase().includes(query.toLowerCase()),
+              )
+              .slice(0, 8)
+              .map((p) => ({ id: p.id, title: p.title })),
+
+          render: () => {
+            let reactRenderer: ReactRenderer<MentionListRef>;
+            let popup: TippyInstance;
+
+            return {
+              onStart: (props) => {
+                reactRenderer = new ReactRenderer(MentionList, {
+                  props,
+                  editor: props.editor,
+                });
+
+                if (!props.clientRect) return;
+
+                [popup] = tippy("body", {
+                  getReferenceClientRect: props.clientRect as () => DOMRect,
+                  appendTo: () => document.body,
+                  content: reactRenderer.element,
+                  showOnCreate: true,
+                  interactive: true,
+                  trigger: "manual",
+                  placement: "top-start",
+                });
+              },
+
+              onUpdate: (props) => {
+                reactRenderer.updateProps(props);
+                if (!props.clientRect) return;
+                popup?.setProps({
+                  getReferenceClientRect: props.clientRect as () => DOMRect,
+                });
+              },
+
+              onKeyDown: (props) => {
+                if (props.event.key === "Escape") {
+                  popup?.hide();
+                  return true;
+                }
+                return reactRenderer.ref?.onKeyDown(props) ?? false;
+              },
+
+              onExit: () => {
+                popup?.destroy();
+                reactRenderer.destroy();
+              },
+            };
+          },
+        },
+      }),
+    ],
+
+    editorProps: {
+      // Enter to submit, Shift+Enter to insert line break
+      handleKeyDown: (_view, event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          handleSubmitRef.current();
+          return true;
+        }
+        return false;
+      },
+
+      // Image paste support (mirrors original textarea onPaste logic)
+      handlePaste: (_view, event) => {
+        const items = Array.from(event.clipboardData?.items ?? []);
+        const imageItem = items.find(
+          (item) =>
+            item.kind === "file" &&
+            (ALLOWED_MIME_TYPES as readonly string[]).includes(
+              item.type as (typeof ALLOWED_MIME_TYPES)[number],
+            ),
+        );
+        if (!imageItem) return false;
+
+        event.preventDefault();
+        const file = imageItem.getAsFile();
+        if (!file) return false;
+
+        if (file.size > 5 * 1024 * 1024) {
+          setError("图片大小不能超过 5MB");
+          return true;
+        }
+
+        setIsUploading(true);
+        setError("");
+        uploadImage(file)
+          .then((url) => {
+            editor?.chain().focus().insertContent(url + "\n").run();
+          })
+          .catch((err: unknown) => {
+            setError(err instanceof Error ? err.message : "上传失败");
+          })
+          .finally(() => setIsUploading(false));
+
+        return true;
+      },
+    },
+
+    onUpdate: ({ editor }) => {
+      setIsEditorEmpty(editor.isEmpty);
+    },
+  });
+
+  // Update ref every render so handleKeyDown always uses latest closures
+  handleSubmitRef.current = () => {
+    if (!editor || editor.isEmpty || isLoading) return;
+    const text = editor.getText({ blockSeparator: "\n" });
+    editor.commands.clearContent();
+    editor.commands.focus();
+    sendMessage(text);
+  };
+
+  // ── Project card click: insert mention at cursor ─────────────
+
+  function handleProjectSelect(id: string, title: string) {
+    if (!editor) return;
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "mention",
+        attrs: { id, label: title },
+      })
+      .insertContent(" ") // space after chip for comfortable typing
+      .run();
   }
 
-  async function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
-    const items = Array.from(e.clipboardData.items);
-    const imageItem = items.find(
-      (item) =>
-        item.kind === "file" &&
-        (ALLOWED_MIME_TYPES as readonly string[]).includes(item.type),
-    );
-    if (!imageItem) return;
-
-    e.preventDefault();
-
-    const file = imageItem.getAsFile();
-    if (!file) return;
-
-    if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
-      setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError("图片大小不能超过 5MB");
-      return;
-    }
-
-    setIsUploading(true);
-    setError("");
-    try {
-      const url = await uploadImage(file);
-      setInput((prev) => (prev ? `${prev}\n${url}` : url));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "上传失败");
-    } finally {
-      setIsUploading(false);
-    }
-  }
+  // ── Send message ─────────────────────────────────────────────
 
   const sendMessage = useCallback(
     async (userContent: string) => {
@@ -422,7 +538,6 @@ export default function ChatPage() {
 
       const messagesWithUser = [...messages, userMessage];
       setMessages(messagesWithUser);
-      setInput("");
       setIsLoading(true);
       setError("");
 
@@ -451,9 +566,7 @@ export default function ChatPage() {
           );
         }
 
-        if (!response.body) {
-          throw new Error("响应体为空，无法读取流");
-        }
+        if (!response.body) throw new Error("响应体为空，无法读取流");
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let accumulated = "";
@@ -461,8 +574,7 @@ export default function ChatPage() {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          accumulated += chunk;
+          accumulated += decoder.decode(value, { stream: true });
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId ? { ...m, content: accumulated } : m,
@@ -480,17 +592,12 @@ export default function ChatPage() {
     [messages, isLoading],
   );
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage(input);
-    }
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    sendMessage(input);
+    handleSubmitRef.current();
   }
+
+  // ── Render ───────────────────────────────────────────────────
 
   return (
     <div className="flex h-0 flex-1">
@@ -562,7 +669,7 @@ export default function ChatPage() {
                   </span>{" "}
                   <br />
                   <span className="text-foreground/70">
-                    &gt; &quot;将上一个项目的描述修改为...&quot;
+                    &gt; &quot;点击左侧卡片快速 @提及 项目&quot;
                   </span>
                 </p>
               </div>
@@ -594,8 +701,8 @@ export default function ChatPage() {
                     <ReactMarkdown>{m.content || "…"}</ReactMarkdown>
                   </div>
                 ) : (
-                  <p className="whitespace-pre-wrap font-mono text-xs tracking-wide">
-                    {m.content}
+                  <p className="font-mono text-xs tracking-wide">
+                    {renderUserContent(m.content)}
                   </p>
                 )}
               </div>
@@ -635,18 +742,13 @@ export default function ChatPage() {
               onChange={handleChatFileChange}
             />
             <div className="flex-1 relative border border-border/60 rounded-xl focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 bg-background/80 shadow-inner transition-all duration-300">
-              <div className="absolute left-4 top-3.5 text-primary/70 font-mono text-sm leading-none z-10 font-bold">
+              <div className="absolute left-4 top-3.5 text-primary/70 font-mono text-sm leading-none z-10 font-bold select-none">
                 &gt;
               </div>
-              <Textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onPaste={handlePaste}
-                placeholder="输入指令... (Enter 执行，Shift+Enter 换行)"
-                className="w-full bg-transparent border-none text-foreground placeholder:text-muted-foreground/40 resize-none min-h-12 max-h-32 pl-9 font-mono text-sm shadow-none focus-visible:ring-0 rounded-xl py-3.5"
-                rows={1}
+              {/* Tiptap editor replaces <Textarea> */}
+              <EditorContent
+                editor={editor}
+                className="w-full pl-9 pr-4 font-mono text-sm text-foreground min-h-12 max-h-32 overflow-y-auto py-3.5 [&_.ProseMirror]:outline-none [&_.ProseMirror]:break-words"
               />
             </div>
 
@@ -667,7 +769,7 @@ export default function ChatPage() {
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || isEditorEmpty}
               className="h-12 rounded-xl bg-primary text-primary-foreground font-mono text-sm font-bold px-8 tracking-widest uppercase hover:bg-primary/90 shadow-[0_4px_14px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(var(--color-primary),0.2)] shrink-0 transition-all hover:-translate-y-0.5"
             >
               执行指令
