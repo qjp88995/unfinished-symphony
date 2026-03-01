@@ -7,7 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Mention from "@tiptap/extension-mention";
 import Placeholder from "@tiptap/extension-placeholder";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
-import ReactMarkdown from "react-markdown";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { ImagePlus, Loader2, Camera, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -365,12 +365,12 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
           const textPart = part as { type: "text"; text: string };
           if (!textPart.text) return null;
           return (
-            <div
+            <MarkdownRenderer
               key={`text-${i}`}
               className="prose prose-sm prose-invert max-w-none font-mono text-xs leading-relaxed"
             >
-              <ReactMarkdown>{textPart.text}</ReactMarkdown>
-            </div>
+              {textPart.text}
+            </MarkdownRenderer>
           );
         }
         return null;
