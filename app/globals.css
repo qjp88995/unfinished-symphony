@@ -188,3 +188,24 @@
     scrollbar-color: var(--color-border) transparent;
   }
 }
+
+/* ── Tiptap editor ─────────────────────────────────────── */
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* Placeholder via @tiptap/extension-placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  @apply text-muted-foreground/40;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* @mention chip rendered inside the editor */
+.mention {
+  @apply inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono font-bold text-xs
+         bg-primary/10 text-primary border border-primary/20 mx-0.5;
+  cursor: default;
+}
