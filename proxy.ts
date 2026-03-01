@@ -23,6 +23,7 @@ export async function proxy(req: NextRequest) {
   // 保护需要认证的 API 路由
   if (
     pathname === "/api/chat" ||
+    pathname.startsWith("/api/chat/history") ||
     pathname.startsWith("/api/providers") ||
     pathname === "/api/projects/events" ||
     pathname === "/api/upload/token"
@@ -42,6 +43,8 @@ export const config = {
   matcher: [
     "/admin/:path*",
     "/api/chat",
+    "/api/chat/history",
+    "/api/chat/history/clear",
     "/api/providers/:path*",
     "/api/projects/events",
     "/api/upload/token",
