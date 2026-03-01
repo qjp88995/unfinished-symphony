@@ -136,6 +136,13 @@ export default function ChatPage() {
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadingProjectId, setUploadingProjectId] = useState<string | null>(
+    null,
+  );
+  const chatFileInputRef = useRef<HTMLInputElement>(null);
+  const projectFileInputRef = useRef<HTMLInputElement>(null);
+  const uploadTargetProjectIdRef = useRef<string | null>(null);
 
   // Initial project load + SSE subscription for real-time updates
   useEffect(() => {
@@ -164,6 +171,86 @@ export default function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  async function uploadImage(file: File): Promise<string> {
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const tokenRes = await fetch(
+      `/api/upload/token?ext=${encodeURIComponent(ext)}`,
+    );
+    if (!tokenRes.ok) {
+      const data = await tokenRes.json().catch(() => ({}));
+      throw new Error((data as { error?: string }).error ?? "获取上传凭证失败");
+    }
+    const { token, key, domain, uploadUrl } = (await tokenRes.json()) as {
+      token: string;
+      key: string;
+      domain: string;
+      uploadUrl: string;
+    };
+
+    const form = new FormData();
+    form.append("token", token);
+    form.append("key", key);
+    form.append("file", file);
+
+    const upRes = await fetch(uploadUrl, { method: "POST", body: form });
+    if (!upRes.ok) throw new Error("上传到七牛失败");
+
+    return `${domain}/${key}`;
+  }
+
+  async function handleChatFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("图片大小不能超过 5MB");
+      return;
+    }
+
+    setIsUploading(true);
+    setError("");
+    try {
+      const url = await uploadImage(file);
+      setInput((prev) => (prev ? `${prev}\n${url}` : url));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "上传失败");
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  async function handleProjectFileChange(
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = e.target.files?.[0];
+    const projectId = uploadTargetProjectIdRef.current;
+    e.target.value = "";
+    if (!file || !projectId) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("图片大小不能超过 5MB");
+      return;
+    }
+
+    setUploadingProjectId(projectId);
+    setError("");
+    try {
+      const url = await uploadImage(file);
+      await fetch(`/api/projects/${projectId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+      // SSE will push the updated project list automatically
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "上传失败");
+    } finally {
+      setUploadingProjectId(null);
+      uploadTargetProjectIdRef.current = null;
+    }
+  }
 
   function handleProjectSelect(title: string) {
     setInput(`编辑项目「${title}」：`);
