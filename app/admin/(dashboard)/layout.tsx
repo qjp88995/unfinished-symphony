@@ -7,7 +7,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background text-foreground relative flex flex-col overflow-hidden">
+    <div className="h-screen bg-background text-foreground relative flex flex-col overflow-hidden">
       {/* Background Cyber Effects (Shared with frontend) */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-primary)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-primary)_1px,transparent_1px)] bg-size-[4rem_4rem] mask-[radial-gradient(ellipse_100%_100%_at_50%_0%,#000_10%,transparent_100%)] opacity-[0.03] dark:opacity-[0.08]"></div>
@@ -41,7 +41,7 @@ export default function AdminLayout({
           <SignOutButton />
         </div>
       </header>
-      <main className="relative z-10 flex-1 flex flex-col h-[calc(100vh-61px)] overflow-hidden">
+      <main className="relative z-10 flex-1 flex flex-col overflow-hidden">
         {children}
       </main>
     </div>
