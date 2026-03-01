@@ -269,11 +269,6 @@ function ProjectCard({
 type AssistantPart = UIMessage["parts"][number];
 
 function AssistantContent({ parts }: { parts: AssistantPart[] }) {
-  const textContent = parts
-    .filter((p) => p.type === "text")
-    .map((p) => (p as { type: "text"; text: string }).text)
-    .join("");
-
   return (
     <div>
       {parts.map((part, i) => {
@@ -322,13 +317,20 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
             />
           );
         }
+        if (part.type === "text") {
+          const textPart = part as { type: "text"; text: string };
+          if (!textPart.text) return null;
+          return (
+            <div
+              key={`text-${i}`}
+              className="prose prose-sm prose-invert max-w-none font-mono text-xs leading-relaxed"
+            >
+              <ReactMarkdown>{textPart.text}</ReactMarkdown>
+            </div>
+          );
+        }
         return null;
       })}
-      {textContent && (
-        <div className="prose prose-sm prose-invert max-w-none font-mono text-xs leading-relaxed">
-          <ReactMarkdown>{textContent}</ReactMarkdown>
-        </div>
-      )}
     </div>
   );
 }
