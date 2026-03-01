@@ -1,4 +1,9 @@
-import { streamText, stepCountIs } from "ai";
+import {
+  streamText,
+  stepCountIs,
+  convertToModelMessages,
+  safeValidateUIMessages,
+} from "ai";
 import { z } from "zod";
 import { createAIModel } from "@/lib/ai/client";
 import { portfolioTools } from "@/lib/ai/tools";
@@ -11,13 +16,27 @@ Always confirm destructive actions (delete) with a brief acknowledgment.
 Respond in the same language the user uses.
 When a user message contains <project id="SOME_ID">@ProjectName</project>, use the id attribute directly as the project ID in tool calls — do not search for the project by name.`;
 
-const messageSchema = z.object({
+// Validate text parts to enforce per-part size limit.
+const textPartSchema = z.object({
+  type: z.literal("text"),
+  text: z.string().max(10_000),
+});
+
+// Permissive schema: accept UIMessage shape from useChat, enforce size limits.
+// AI SDK v6 UIMessage uses `parts` (not `content`), so `content` is omitted here.
+// Restrict roles to user/assistant only — system role must never come from the client.
+const uiMessageSchema = z.object({
+  id: z.string(),
   role: z.enum(["user", "assistant"]),
-  content: z.string().max(10_000),
+  parts: z
+    .array(z.union([textPartSchema, z.record(z.string(), z.unknown())]))
+    .max(50),
+  metadata: z.unknown().optional(),
+  createdAt: z.union([z.string(), z.date()]).optional(),
 });
 
 const bodySchema = z.object({
-  messages: z.array(messageSchema).max(50),
+  messages: z.array(uiMessageSchema).max(50),
 });
 
 export async function POST(req: Request) {
@@ -25,7 +44,15 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return Response.json({ error: "Invalid request body" }, { status: 400 });
   }
-  const { messages } = parsed.data;
+
+  // Use the SDK's own validator to get properly-typed UIMessage[] without unsafe cast.
+  // This validates the full structure including parts, eliminating the `as UIMessage[]` cast.
+  const validated = await safeValidateUIMessages({
+    messages: parsed.data.messages,
+  });
+  if (!validated.success) {
+    return Response.json({ error: "Invalid message format" }, { status: 400 });
+  }
 
   let model;
   try {
@@ -39,7 +66,7 @@ export async function POST(req: Request) {
   const result = streamText({
     model,
     system: SYSTEM_PROMPT,
-    messages,
+    messages: await convertToModelMessages(validated.data),
     // portfolioTools uses `inputSchema` (ai SDK v6 format); cast to any to satisfy
     // the CoreTool union type which still expects `parameters` in some type paths.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,5 +75,5 @@ export async function POST(req: Request) {
     stopWhen: stepCountIs(5),
   });
 
-  return result.toTextStreamResponse();
+  return result.toUIMessageStreamResponse({ sendReasoning: true });
 }

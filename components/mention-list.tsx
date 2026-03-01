@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 
 interface ProjectItem {
   id: string;
@@ -21,10 +21,18 @@ export interface MentionListRef {
 
 const MentionList = forwardRef<MentionListRef, MentionListProps>(
   ({ items, command }, ref) => {
-    const [selectedIndex, setSelectedIndex] = useState(0);
+    // Store [selectedIndex, prevItems] together to reset index when items change
+    // without needing useEffect — this is the React "derived state during render" pattern.
+    const [{ selectedIndex, prevItems }, setSelection] = useState({
+      selectedIndex: 0,
+      prevItems: items,
+    });
 
-    // Reset selection when items change
-    useEffect(() => setSelectedIndex(0), [items]);
+    // When items reference changes, reset the selected index synchronously during render
+    const currentIndex =
+      prevItems !== items
+        ? (setSelection({ selectedIndex: 0, prevItems: items }), 0)
+        : selectedIndex;
 
     function selectItem(index: number) {
       const item = items[index];
@@ -37,16 +45,22 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(
       onKeyDown({ event }) {
         if (event.key === "ArrowUp") {
           if (items.length === 0) return false;
-          setSelectedIndex((i) => (i + items.length - 1) % items.length);
+          setSelection((s) => ({
+            selectedIndex: (s.selectedIndex + items.length - 1) % items.length,
+            prevItems: items,
+          }));
           return true;
         }
         if (event.key === "ArrowDown") {
           if (items.length === 0) return false;
-          setSelectedIndex((i) => (i + 1) % items.length);
+          setSelection((s) => ({
+            selectedIndex: (s.selectedIndex + 1) % items.length,
+            prevItems: items,
+          }));
           return true;
         }
         if (event.key === "Enter") {
-          selectItem(selectedIndex);
+          selectItem(currentIndex);
           return true;
         }
         return false;
@@ -73,11 +87,13 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(
             key={item.id}
             type="button"
             className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-mono transition-colors flex items-center gap-2 ${
-              index === selectedIndex
+              index === currentIndex
                 ? "bg-primary/10 text-primary border border-primary/20"
                 : "text-foreground hover:bg-muted/50 border border-transparent"
             }`}
-            onMouseEnter={() => setSelectedIndex(index)}
+            onMouseEnter={() =>
+              setSelection({ selectedIndex: index, prevItems: items })
+            }
             onClick={() => selectItem(index)}
           >
             <span className="text-primary/60 font-bold">@</span>
