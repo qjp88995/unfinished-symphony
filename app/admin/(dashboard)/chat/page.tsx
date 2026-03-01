@@ -68,13 +68,26 @@ async function cropAndCompress(file: File): Promise<File> {
   canvas.height = CROP_TARGET_H;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context unavailable");
-  ctx.drawImage(bitmap, cropX, cropY, cropW, cropH, 0, 0, CROP_TARGET_W, CROP_TARGET_H);
+  ctx.drawImage(
+    bitmap,
+    cropX,
+    cropY,
+    cropW,
+    cropH,
+    0,
+    0,
+    CROP_TARGET_W,
+    CROP_TARGET_H,
+  );
   bitmap.close();
 
   return new Promise<File>((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
-        if (!blob) { reject(new Error("图片处理失败")); return; }
+        if (!blob) {
+          reject(new Error("图片处理失败"));
+          return;
+        }
         resolve(new File([blob], "image.webp", { type: "image/webp" }));
       },
       "image/webp",
@@ -84,8 +97,11 @@ async function cropAndCompress(file: File): Promise<File> {
 }
 
 function parseTechStack(techStack: string): string[] {
-  try { return JSON.parse(techStack) as string[]; }
-  catch { return []; }
+  try {
+    return JSON.parse(techStack) as string[];
+  } catch {
+    return [];
+  }
 }
 
 /** Parse <project id="...">@name</project> tags in user messages */
@@ -254,13 +270,19 @@ export default function ChatPage() {
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadingProjectId, setUploadingProjectId] = useState<string | null>(null);
+  const [uploadingProjectId, setUploadingProjectId] = useState<string | null>(
+    null,
+  );
   const chatFileInputRef = useRef<HTMLInputElement>(null);
   const projectFileInputRef = useRef<HTMLInputElement>(null);
   const uploadTargetProjectIdRef = useRef<string | null>(null);
 
   // Ref to avoid stale closure in Tiptap's editorProps.handleKeyDown
   const handleSubmitRef = useRef<() => void>(() => {});
+
+  // Ref to avoid stale closure in Tiptap suggestion's items() callback
+  const projectsRef = useRef<ProjectItem[]>([]);
+  projectsRef.current = projects; // updated every render
 
   // Initial project load + SSE subscription for real-time updates
   useEffect(() => {
@@ -269,8 +291,11 @@ export default function ChatPage() {
     const es = new EventSource("/api/projects/events");
     es.addEventListener("project-changed", (e: MessageEvent<string>) => {
       sseHasFired = true;
-      try { setProjects(JSON.parse(e.data) as ProjectItem[]); }
-      catch { /* ignore malformed event */ }
+      try {
+        setProjects(JSON.parse(e.data) as ProjectItem[]);
+      } catch {
+        /* ignore malformed event */
+      }
     });
 
     fetch("/api/projects")
@@ -292,13 +317,22 @@ export default function ChatPage() {
   async function uploadImage(file: File): Promise<string> {
     const processed = await cropAndCompress(file);
     const ext = "webp";
-    const tokenRes = await fetch(`/api/upload/token?ext=${encodeURIComponent(ext)}`);
+    const tokenRes = await fetch(
+      `/api/upload/token?ext=${encodeURIComponent(ext)}`,
+    );
     const tokenData = (await tokenRes.json().catch(() => ({}))) as {
-      token?: string; key?: string; domain?: string; uploadUrl?: string; error?: string;
+      token?: string;
+      key?: string;
+      domain?: string;
+      uploadUrl?: string;
+      error?: string;
     };
     if (!tokenRes.ok) throw new Error(tokenData.error ?? "获取上传凭证失败");
     const { token, key, domain, uploadUrl } = tokenData as {
-      token: string; key: string; domain: string; uploadUrl: string;
+      token: string;
+      key: string;
+      domain: string;
+      uploadUrl: string;
     };
 
     const form = new FormData();
@@ -319,13 +353,20 @@ export default function ChatPage() {
       setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) { setError("图片大小不能超过 5MB"); return; }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("图片大小不能超过 5MB");
+      return;
+    }
 
     setIsUploading(true);
     setError("");
     try {
       const url = await uploadImage(file);
-      editor?.chain().focus().insertContent(url + "\n").run();
+      editor
+        ?.chain()
+        .focus()
+        .insertContent(url + "\n")
+        .run();
     } catch (err) {
       setError(err instanceof Error ? err.message : "上传失败");
     } finally {
@@ -333,7 +374,9 @@ export default function ChatPage() {
     }
   }
 
-  async function handleProjectFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleProjectFileChange(
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) {
     const file = e.target.files?.[0];
     const projectId = uploadTargetProjectIdRef.current;
     e.target.value = "";
@@ -342,7 +385,10 @@ export default function ChatPage() {
       setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) { setError("图片大小不能超过 5MB"); return; }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("图片大小不能超过 5MB");
+      return;
+    }
 
     setUploadingProjectId(projectId);
     setError("");
@@ -354,7 +400,9 @@ export default function ChatPage() {
         body: JSON.stringify({ imageUrl: url }),
       });
       if (!updateRes.ok) {
-        const body = (await updateRes.json().catch(() => ({}))) as { error?: string };
+        const body = (await updateRes.json().catch(() => ({}))) as {
+          error?: string;
+        };
         throw new Error(body.error ?? "更新项目封面失败");
       }
       // SSE will push the updated project list automatically
@@ -390,8 +438,10 @@ export default function ChatPage() {
           `<project id="${node.attrs.id as string}">@${node.attrs.label as string}</project>`,
         suggestion: {
           // Filter projects matching the query typed after @
+          // Uses projectsRef to avoid a stale closure — items() is captured
+          // once by useEditor but projectsRef.current is updated every render.
           items: ({ query }: { query: string }) =>
-            projects
+            projectsRef.current
               .filter((p) =>
                 p.title.toLowerCase().includes(query.toLowerCase()),
               )
@@ -399,8 +449,8 @@ export default function ChatPage() {
               .map((p) => ({ id: p.id, title: p.title })),
 
           render: () => {
-            let reactRenderer: ReactRenderer<MentionListRef>;
-            let popup: TippyInstance;
+            let reactRenderer: ReactRenderer<MentionListRef> | null = null;
+            let popup: TippyInstance | null = null;
 
             return {
               onStart: (props) => {
@@ -423,7 +473,7 @@ export default function ChatPage() {
               },
 
               onUpdate: (props) => {
-                reactRenderer.updateProps(props);
+                reactRenderer?.updateProps(props);
                 if (!props.clientRect) return;
                 popup?.setProps({
                   getReferenceClientRect: props.clientRect as () => DOMRect,
@@ -435,12 +485,12 @@ export default function ChatPage() {
                   popup?.hide();
                   return true;
                 }
-                return reactRenderer.ref?.onKeyDown(props) ?? false;
+                return reactRenderer?.ref?.onKeyDown(props) ?? false;
               },
 
               onExit: () => {
                 popup?.destroy();
-                reactRenderer.destroy();
+                reactRenderer?.destroy();
               },
             };
           },
@@ -484,7 +534,11 @@ export default function ChatPage() {
         setError("");
         uploadImage(file)
           .then((url) => {
-            editor?.chain().focus().insertContent(url + "\n").run();
+            editor
+              ?.chain()
+              .focus()
+              .insertContent(url + "\n")
+              .run();
           })
           .catch((err: unknown) => {
             setError(err instanceof Error ? err.message : "上传失败");

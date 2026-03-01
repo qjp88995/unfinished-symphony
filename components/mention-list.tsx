@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useState,
-} from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 
 interface ProjectItem {
   id: string;
@@ -41,11 +36,13 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(
     useImperativeHandle(ref, () => ({
       onKeyDown({ event }) {
         if (event.key === "ArrowUp") {
-          setSelectedIndex((i) => (i + items.length - 1) % Math.max(items.length, 1));
+          if (items.length === 0) return false;
+          setSelectedIndex((i) => (i + items.length - 1) % items.length);
           return true;
         }
         if (event.key === "ArrowDown") {
-          setSelectedIndex((i) => (i + 1) % Math.max(items.length, 1));
+          if (items.length === 0) return false;
+          setSelectedIndex((i) => (i + 1) % items.length);
           return true;
         }
         if (event.key === "Enter") {
@@ -89,7 +86,7 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(
         ))}
       </div>
     );
-  }
+  },
 );
 
 MentionList.displayName = "MentionList";
