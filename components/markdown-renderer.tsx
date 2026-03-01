@@ -1,8 +1,14 @@
+"use client";
+
+import { useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { Check, Copy } from "lucide-react";
 
 /** Chip for <project id="...">name</project> inside AI replies */
 function ProjectChip({ children }: { children?: React.ReactNode }) {
@@ -10,6 +16,63 @@ function ProjectChip({ children }: { children?: React.ReactNode }) {
     <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono font-bold text-xs bg-primary/10 text-primary border border-primary/20 mx-0.5">
       {children}
     </span>
+  );
+}
+
+/** Syntax-highlighted code block with language label + copy button */
+function CodeBlock({
+  language,
+  children,
+}: {
+  language: string;
+  children: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    void navigator.clipboard.writeText(children).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div className="my-3 rounded-md overflow-hidden border border-border/40 bg-[#282c34]">
+      {/* Header bar */}
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/30 bg-black/30">
+        <span className="text-[10px] font-mono uppercase tracking-widest text-primary/70">
+          {language || "code"}
+        </span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {copied ? (
+            <Check className="size-3 text-primary" />
+          ) : (
+            <Copy className="size-3" />
+          )}
+          {copied ? "已复制" : "复制"}
+        </button>
+      </div>
+      <SyntaxHighlighter
+        language={language}
+        style={oneDark}
+        PreTag="div"
+        customStyle={{
+          margin: 0,
+          padding: "12px 16px",
+          background: "transparent",
+          fontSize: "11px",
+          lineHeight: "1.6",
+          fontFamily: "var(--font-geist-mono), monospace",
+        }}
+        codeTagProps={{ style: { fontFamily: "inherit" } }}
+      >
+        {children}
+      </SyntaxHighlighter>
+    </div>
   );
 }
 
@@ -42,12 +105,18 @@ const components: Components = {
     </td>
   ),
 
-  // Inline code
-  code: ({ children, className }) => {
-    // Block code is wrapped in <pre> by remark, so className contains language-*
-    const isBlock = Boolean(className);
-    if (isBlock) {
-      return <code className={`${className ?? ""} text-xs`}>{children}</code>;
+  // Let CodeBlock handle the <pre> wrapper
+  pre: ({ children }) => <>{children}</>,
+
+  // Block code → SyntaxHighlighter; inline code → styled chip
+  code: ({ className, children }) => {
+    const match = /language-(\w+)/.exec(className ?? "");
+    if (match) {
+      return (
+        <CodeBlock language={match[1]}>
+          {String(children).replace(/\n$/, "")}
+        </CodeBlock>
+      );
     }
     return (
       <code className="px-1 py-0.5 rounded-sm bg-primary/10 text-primary text-[11px] font-mono">
@@ -67,6 +136,7 @@ interface MarkdownRendererProps {
  * - GFM (tables, strikethrough, task lists)
  * - Math formulas via KaTeX ($...$ and $$...$$)
  * - Raw HTML pass-through, including custom <project> tags
+ * - Syntax-highlighted code blocks with copy button
  */
 export function MarkdownRenderer({
   children,
