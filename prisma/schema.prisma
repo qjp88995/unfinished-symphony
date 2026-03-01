@@ -34,3 +34,11 @@ model AIProvider {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model ChatRecord {
+  id        String   @id @default(cuid())
+  type      String   // "user" | "assistant" | "compression" | "clear"
+  parts     String?  // JSON 序列化的 UIMessage parts 数组（事件类型为 null）
+  summary   String?  // 压缩摘要（type="compression" 时使用）
+  createdAt DateTime @default(now())
+}
