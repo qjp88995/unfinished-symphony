@@ -367,6 +367,35 @@ export default function ChatPage() {
     inputRef.current?.focus();
   }
 
+  async function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const items = Array.from(e.clipboardData.items);
+    const imageItem = items.find(
+      (item) => item.kind === "file" && ALLOWED_MIME_TYPES.includes(item.type),
+    );
+    if (!imageItem) return;
+
+    const file = imageItem.getAsFile();
+    if (!file) return;
+
+    e.preventDefault();
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("图片大小不能超过 5MB");
+      return;
+    }
+
+    setIsUploading(true);
+    setError("");
+    try {
+      const url = await uploadImage(file);
+      setInput((prev) => (prev ? `${prev}\n${url}` : url));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "上传失败");
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
   const sendMessage = useCallback(
     async (userContent: string) => {
       if (!userContent.trim() || isLoading) return;
@@ -554,6 +583,7 @@ export default function ChatPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder="输入消息…（Enter 发送，Shift+Enter 换行）"
               className="flex-1 bg-input border-input text-foreground placeholder:text-muted-foreground resize-none min-h-11 max-h-32"
               rows={1}
