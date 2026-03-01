@@ -25,10 +25,10 @@ export async function GET(req: Request) {
   const accessKey = process.env.QINIU_ACCESS_KEY;
   const secretKey = process.env.QINIU_SECRET_KEY;
   const bucket = process.env.QINIU_BUCKET;
-  const domain = process.env.QINIU_DOMAIN;
+  const cdnDomain = process.env.QINIU_CDN_DOMAIN;
   const uploadUrl = process.env.QINIU_UPLOAD_URL ?? "https://up.qiniup.com";
 
-  if (!accessKey || !secretKey || !bucket || !domain) {
+  if (!accessKey || !secretKey || !bucket || !cdnDomain) {
     return NextResponse.json(
       { error: "Qiniu not configured" },
       { status: 503 },
@@ -44,5 +44,5 @@ export async function GET(req: Request) {
   });
   const token = putPolicy.uploadToken(mac);
 
-  return NextResponse.json({ token, key, domain, uploadUrl });
+  return NextResponse.json({ token, key, domain: cdnDomain, uploadUrl });
 }
