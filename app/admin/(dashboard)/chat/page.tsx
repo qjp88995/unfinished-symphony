@@ -10,6 +10,17 @@ import tippy, { type Instance as TippyInstance } from "tippy.js";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { ImagePlus, Loader2, Camera, PlusCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Link from "next/link";
 import MentionList, { type MentionListRef } from "@/components/mention-list";
 import { useChat } from "@ai-sdk/react";
@@ -847,6 +858,18 @@ export default function ChatPage() {
     }
   }
 
+  async function handleClearAll() {
+    // 乐观更新 UI
+    setDisplayItems([]);
+    setMessages([]);
+
+    try {
+      await fetch("/api/chat/history", { method: "DELETE" });
+    } catch {
+      // 静默失败
+    }
+  }
+
   async function handleDeleteMessage(messageId: string) {
     const idsToDelete = findPairIds(displayItems, messageId);
 
@@ -922,7 +945,37 @@ export default function ChatPage() {
       {/* Right panel: chat */}
       <div className="flex flex-col flex-1 min-w-0 relative z-10 bg-background/30 backdrop-blur-sm">
         {/* Chat header */}
-        <div className="shrink-0 flex items-center justify-end px-6 py-2 border-b border-border/30">
+        <div className="shrink-0 flex items-center justify-end gap-2 px-6 py-2 border-b border-border/30">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-[10px] font-mono text-muted-foreground hover:text-destructive gap-1.5 h-7"
+              >
+                <Trash2 className="size-3" />
+                清空
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>清空全部聊天记录？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  此操作将永久删除所有聊天记录，无法恢复。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => void handleClearAll()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  确认清空
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           <Button
             variant="ghost"
             size="sm"
