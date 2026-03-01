@@ -24,7 +24,8 @@ export async function proxy(req: NextRequest) {
   if (
     pathname === "/api/chat" ||
     pathname.startsWith("/api/providers") ||
-    pathname === "/api/projects/events"
+    pathname === "/api/projects/events" ||
+    pathname === "/api/upload/token"
   ) {
     const res = NextResponse.next();
     const session = await getIronSession<SessionData>(req, res, sessionOptions);
@@ -43,5 +44,6 @@ export const config = {
     "/api/chat",
     "/api/providers/:path*",
     "/api/projects/events",
+    "/api/upload/token",
   ],
 };
