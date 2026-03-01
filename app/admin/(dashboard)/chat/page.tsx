@@ -279,6 +279,8 @@ export default function ChatPage() {
 
   // Ref to avoid stale closure in Tiptap's editorProps.handleKeyDown
   const handleSubmitRef = useRef<() => void>(() => {});
+  // Track whether the @mention suggestion dropdown is open
+  const isSuggestionActiveRef = useRef(false);
 
   // Ref to avoid stale closure in Tiptap suggestion's items() callback
   const projectsRef = useRef<ProjectItem[]>([]);
@@ -454,6 +456,7 @@ export default function ChatPage() {
 
             return {
               onStart: (props) => {
+                isSuggestionActiveRef.current = true;
                 reactRenderer = new ReactRenderer(MentionList, {
                   props,
                   editor: props.editor,
@@ -489,6 +492,7 @@ export default function ChatPage() {
               },
 
               onExit: () => {
+                isSuggestionActiveRef.current = false;
                 popup?.destroy();
                 reactRenderer?.destroy();
               },
@@ -499,9 +503,13 @@ export default function ChatPage() {
     ],
 
     editorProps: {
-      // Enter to submit, Shift+Enter to insert line break
+      // Enter to submit, Shift+Enter to insert line break.
+      // When the @mention suggestion dropdown is active, let the suggestion
+      // plugin handle Enter first (it runs after editorProps in ProseMirror's
+      // someProp chain, so we must yield here).
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && !event.shiftKey) {
+          if (isSuggestionActiveRef.current) return false;
           event.preventDefault();
           handleSubmitRef.current();
           return true;
