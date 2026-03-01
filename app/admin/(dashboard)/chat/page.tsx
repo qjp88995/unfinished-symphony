@@ -8,7 +8,7 @@ import Mention from "@tiptap/extension-mention";
 import Placeholder from "@tiptap/extension-placeholder";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
 import ReactMarkdown from "react-markdown";
-import { ImagePlus, Loader2, Camera } from "lucide-react";
+import { ImagePlus, Loader2, Camera, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import MentionList, { type MentionListRef } from "@/components/mention-list";
@@ -17,6 +17,8 @@ import { ThinkingBlock } from "@/components/thinking-block";
 import { ToolCallBlock } from "@/components/tool-call-block";
 import type { UIMessage, DynamicToolUIPart, ReasoningUIPart } from "ai";
 import { isStaticToolUIPart, getStaticToolName } from "ai";
+import { CompressionDivider } from "@/components/compression-divider";
+import { ClearDivider } from "@/components/clear-divider";
 
 interface ProjectItem {
   id: string;
@@ -378,7 +380,18 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
 }
 
 export default function ChatPage() {
-  const { messages, sendMessage, status, error: chatError } = useChat();
+  type DisplayItem =
+    | { kind: "message"; message: ReturnType<typeof useChat>["messages"][0] }
+    | { kind: "compression"; id: string; summary: string }
+    | { kind: "clear"; id: string };
+
+  const {
+    messages,
+    sendMessage,
+    status,
+    setMessages,
+    error: chatError,
+  } = useChat();
   const isLoading = status === "submitted" || status === "streaming";
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
@@ -400,6 +413,10 @@ export default function ChatPage() {
   // Ref to avoid stale closure in Tiptap suggestion's items() callback
   const projectsRef = useRef<ProjectItem[]>([]);
   projectsRef.current = projects; // updated every render
+
+  const [displayItems, setDisplayItems] = useState<DisplayItem[]>([]);
+  const historyLoaded = useRef(false);
+  const prevMsgCountRef = useRef(0);
 
   // Initial project load + SSE subscription for real-time updates
   useEffect(() => {
@@ -427,6 +444,79 @@ export default function ChatPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [displayItems]);
+
+  // 页面挂载时加载聊天历史
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        const res = await fetch("/api/chat/history");
+        const data = (await res.json()) as {
+          success: boolean;
+          data: Array<{
+            id: string;
+            type: string;
+            parts: string | null;
+            summary: string | null;
+            createdAt: string;
+          }>;
+        };
+        if (!data.success) return;
+
+        const items: DisplayItem[] = [];
+        const msgs: UIMessage[] = [];
+
+        for (const record of data.data) {
+          if (record.type === "user" || record.type === "assistant") {
+            const parsedParts = (() => {
+              try {
+                return JSON.parse(record.parts ?? "[]") as UIMessage["parts"];
+              } catch {
+                return [] as UIMessage["parts"];
+              }
+            })();
+            const msg = {
+              id: record.id,
+              role: record.type as "user" | "assistant",
+              parts: parsedParts,
+              createdAt: new Date(record.createdAt),
+            };
+            msgs.push(msg);
+            items.push({ kind: "message", message: msg });
+          } else if (record.type === "compression" && record.summary) {
+            items.push({
+              kind: "compression",
+              id: record.id,
+              summary: record.summary,
+            });
+          } else if (record.type === "clear") {
+            items.push({ kind: "clear", id: record.id });
+          }
+        }
+
+        setMessages(msgs);
+        setDisplayItems(items);
+        historyLoaded.current = true;
+        prevMsgCountRef.current = msgs.length;
+      } catch {
+        // 静默失败，不影响正常使用
+      }
+    }
+    void loadHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 将 useChat 新增的消息同步到 displayItems
+  useEffect(() => {
+    if (!historyLoaded.current) return;
+    if (messages.length > prevMsgCountRef.current) {
+      const newMsgs = messages.slice(prevMsgCountRef.current);
+      setDisplayItems((prev) => [
+        ...prev,
+        ...newMsgs.map((m) => ({ kind: "message" as const, message: m })),
+      ]);
+      prevMsgCountRef.current = messages.length;
+    }
   }, [messages]);
 
   // ── Image upload helpers ─────────────────────────────────────
@@ -706,6 +796,18 @@ export default function ChatPage() {
     handleSubmitRef.current();
   }
 
+  async function handleNewSession() {
+    try {
+      await fetch("/api/chat/history/clear", { method: "POST" });
+      setDisplayItems((prev) => [
+        ...prev,
+        { kind: "clear", id: `clear-${Date.now()}` },
+      ]);
+    } catch {
+      // 静默失败
+    }
+  }
+
   // ── Render ───────────────────────────────────────────────────
 
   return (
@@ -757,9 +859,22 @@ export default function ChatPage() {
 
       {/* Right panel: chat */}
       <div className="flex flex-col flex-1 min-w-0 relative z-10 bg-background/30 backdrop-blur-sm">
+        {/* Chat header */}
+        <div className="shrink-0 flex items-center justify-end px-6 py-2 border-b border-border/30">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-[10px] font-mono text-muted-foreground hover:text-foreground gap-1.5 h-7"
+            onClick={() => void handleNewSession()}
+          >
+            <PlusCircle className="size-3" />
+            新对话
+          </Button>
+        </div>
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
-          {messages.length === 0 && (
+          {displayItems.length === 0 && (
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground opacity-80">
               <div className="w-16 h-16 border border-primary/20 bg-primary/5 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
                 <span className="text-2xl font-mono text-primary animate-pulse w-4 border-b-2 border-primary"></span>
@@ -785,42 +900,55 @@ export default function ChatPage() {
             </div>
           )}
 
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-            >
+          {displayItems.map((item, idx) => {
+            if (item.kind === "compression") {
+              return (
+                <CompressionDivider key={item.id} summary={item.summary} />
+              );
+            }
+            if (item.kind === "clear") {
+              return <ClearDivider key={item.id} />;
+            }
+            const m = item.message;
+            return (
               <div
-                className={`relative max-w-[80%] rounded-none px-5 py-4 text-sm shadow-sm ${
-                  m.role === "user"
-                    ? "bg-primary border border-primary/50 text-primary-foreground"
-                    : "bg-card/80 dark:bg-card/50 border border-border text-foreground backdrop-blur-sm"
-                }`}
+                key={m.id ?? idx}
+                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                {/* Tech Accents for message bubbles */}
                 <div
-                  className={`absolute top-0 left-0 w-2 h-2 border-t border-l ${m.role === "user" ? "border-primary-foreground/50" : "border-primary/50"}`}
-                ></div>
-                <div
-                  className={`absolute bottom-0 right-0 w-2 h-2 border-b border-r ${m.role === "user" ? "border-primary-foreground/50" : "border-primary/50"}`}
-                ></div>
+                  className={`relative max-w-[80%] rounded-none px-5 py-4 text-sm shadow-sm ${
+                    m.role === "user"
+                      ? "bg-primary border border-primary/50 text-primary-foreground"
+                      : "bg-card/80 dark:bg-card/50 border border-border text-foreground backdrop-blur-sm"
+                  }`}
+                >
+                  {/* Tech Accents for message bubbles */}
+                  <div
+                    className={`absolute top-0 left-0 w-2 h-2 border-t border-l ${m.role === "user" ? "border-primary-foreground/50" : "border-primary/50"}`}
+                  ></div>
+                  <div
+                    className={`absolute bottom-0 right-0 w-2 h-2 border-b border-r ${m.role === "user" ? "border-primary-foreground/50" : "border-primary/50"}`}
+                  ></div>
 
-                {m.role === "assistant" ? (
-                  <AssistantContent parts={m.parts ?? []} />
-                ) : (
-                  <p className="font-mono text-xs tracking-wide">
-                    {renderUserContent(
-                      m.parts
-                        .filter((p) => p.type === "text")
-                        .map((p) => (p as { type: "text"; text: string }).text)
-                        .join(""),
-                      true,
-                    )}
-                  </p>
-                )}
+                  {m.role === "assistant" ? (
+                    <AssistantContent parts={m.parts ?? []} />
+                  ) : (
+                    <p className="font-mono text-xs tracking-wide">
+                      {renderUserContent(
+                        m.parts
+                          .filter((p) => p.type === "text")
+                          .map(
+                            (p) => (p as { type: "text"; text: string }).text,
+                          )
+                          .join(""),
+                        true,
+                      )}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="flex justify-start">
