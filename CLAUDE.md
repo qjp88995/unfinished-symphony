@@ -42,17 +42,18 @@ app/
   (portfolio)/          # 路由组：公开作品集（无鉴权）
     layout.tsx
     page.tsx            # Hero + 作品网格（Server Component，直接读 DB）
-  admin/                # 后台路由（/admin/* URL，middleware 保护）
+  admin/                # 后台路由（/admin/* URL，proxy.ts 保护）
     layout.tsx          # 导航 + Sign out
     login/page.tsx      # 密码登录
-    chat/page.tsx       # AI 对话界面（自定义流式读取）
+    chat/page.tsx       # AI 对话界面（左右分栏：项目列表 + 对话，SSE 实时同步）
     settings/page.tsx   # AI 提供商配置
     sign-out-button.tsx # Client Component
   api/
     auth/route.ts       # POST 登录 / DELETE 登出
     chat/route.ts       # POST 流式 AI 对话（+ Tool Calling）
     projects/route.ts   # GET/POST
-    projects/[id]/route.ts  # PUT/DELETE
+    projects/[id]/route.ts    # PUT/DELETE
+    projects/events/route.ts  # GET SSE 实时推送项目变更
     providers/route.ts  # GET/POST
     providers/[id]/route.ts # PUT/DELETE
   layout.tsx            # 根布局（Geist 字体）
@@ -62,13 +63,14 @@ lib/
   db.ts                 # Prisma 单例（better-sqlite3 driver adapter）
   session.ts            # iron-session 配置（SessionData + sessionOptions）
   utils.ts              # cn() 工具函数（clsx + tailwind-merge）
+  project-events.ts     # Node.js EventEmitter 单例，项目变更事件总线
   ai/
     client.ts           # createAIModel()：从 DB 读取默认提供商配置
     tools.ts            # portfolioTools：11 个 tool 定义（ai SDK v6 inputSchema）
-    executor.ts         # executeToolCall()：所有 DB 操作
+    executor.ts         # executeToolCall()：所有 DB 操作（写操作后触发 project-events）
 
 components/ui/          # shadcn/ui 组件
-middleware.ts           # 保护 /admin/* + /api/chat + /api/providers/*
+proxy.ts                # Next.js 16 中间件（保护 /admin/* + /api/chat + /api/providers/* + /api/projects/events）
 prisma/schema.prisma    # Project + AIProvider 模型
 app/generated/prisma/   # Prisma Client 生成产物（勿手动修改）
 ```
@@ -94,8 +96,20 @@ tool({ description: '...', inputSchema: z.object({...}), execute: async (params)
 ```
 `streamText` 使用 `stopWhen: stepCountIs(5)` 代替 `maxSteps`，响应用 `toTextStreamResponse()`。
 
+### Next.js 16 中间件文件约定
+Next.js 16 将中间件文件名从 `middleware.ts` **更名为 `proxy.ts`**（`middleware.ts` 已废弃）：
+- 项目根目录使用 `proxy.ts`，导出函数名为 `proxy`（非 `middleware`）
+- 同时存在两个文件时 Next.js 会报错，要求只保留 `proxy.ts`
+- `config.matcher` 写法不变
+
+```typescript
+// proxy.ts
+export async function proxy(req: NextRequest) { ... }
+export const config = { matcher: [...] };
+```
+
 ### iron-session Edge Runtime 用法
-Middleware 中使用三参数形式（不用 `next/headers`）：
+`proxy.ts` 中间件中使用三参数形式（不用 `next/headers`）：
 ```typescript
 const session = await getIronSession<SessionData>(req, res, sessionOptions);
 ```
@@ -121,7 +135,7 @@ const session = await getIronSession<SessionData>(await cookies(), sessionOption
 
 ### AI 提供商安全
 - API Key 只在服务端 Route Handler 中读取，`GET /api/providers` 不返回 apiKey
-- `/api/chat` 和 `/api/providers/*` 由 middleware 验证 session
+- `/api/chat`、`/api/providers/*`、`/api/projects/events` 由 `proxy.ts` 中间件验证 session
 - Chat API 对请求体做 Zod 验证（最多 50 条消息，每条最多 10000 字符）
 
 ### 环境变量
