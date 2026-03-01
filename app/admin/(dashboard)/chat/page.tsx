@@ -134,7 +134,7 @@ function ProjectCard({
             className="w-full h-28 object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 dark:opacity-75 group-hover:opacity-100"
           />
         ) : (
-          <div className="w-full h-28 bg-[linear-gradient(45deg,transparent_25%,rgba(128,128,128,0.05)_50%,transparent_75%,transparent_100%)] bg-[length:10px_10px] bg-background/50 flex items-center justify-center">
+          <div className="w-full h-28 bg-[linear-gradient(45deg,transparent_25%,rgba(128,128,128,0.05)_50%,transparent_75%,transparent_100%)] bg-size-[10px_10px] bg-background/50 flex items-center justify-center">
             <span className="text-2xl font-mono font-bold text-muted-foreground/30 uppercase">
               {project.title.charAt(0)}
             </span>
@@ -622,7 +622,7 @@ export default function ChatPage() {
 
         {/* Input */}
         <div className="border-t border-border/40 bg-background/70 backdrop-blur-xl p-4 shrink-0 relative shadow-[0_-4px_24px_rgba(0,0,0,0.02)]">
-          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
+          <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent"></div>
           <form
             onSubmit={handleSubmit}
             className="flex gap-3 items-end max-w-4xl mx-auto relative group"
@@ -635,7 +635,7 @@ export default function ChatPage() {
               onChange={handleChatFileChange}
             />
             <div className="flex-1 relative border border-border/60 rounded-xl focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 bg-background/80 shadow-inner transition-all duration-300">
-              <div className="absolute left-4 top-[14px] text-primary/70 font-mono text-sm leading-none z-10 font-bold">
+              <div className="absolute left-4 top-3.5 text-primary/70 font-mono text-sm leading-none z-10 font-bold">
                 &gt;
               </div>
               <Textarea
@@ -645,7 +645,7 @@ export default function ChatPage() {
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 placeholder="输入指令... (Enter 执行，Shift+Enter 换行)"
-                className="w-full bg-transparent border-none text-foreground placeholder:text-muted-foreground/40 resize-none min-h-[48px] max-h-32 pl-9 font-mono text-sm shadow-none focus-visible:ring-0 rounded-xl py-3.5"
+                className="w-full bg-transparent border-none text-foreground placeholder:text-muted-foreground/40 resize-none min-h-12 max-h-32 pl-9 font-mono text-sm shadow-none focus-visible:ring-0 rounded-xl py-3.5"
                 rows={1}
               />
             </div>
@@ -654,7 +654,7 @@ export default function ChatPage() {
               type="button"
               variant="outline"
               size="icon"
-              className="h-[48px] w-[48px] rounded-xl border-border/60 bg-background/50 hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all shrink-0"
+              className="size-12 rounded-xl border-border/60 bg-background/50 hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all shrink-0"
               onClick={() => chatFileInputRef.current?.click()}
               disabled={isUploading || isLoading || uploadingProjectId !== null}
               title="Upload media"
@@ -668,7 +668,7 @@ export default function ChatPage() {
             <Button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="h-[48px] rounded-xl bg-primary text-primary-foreground font-mono text-sm font-bold px-8 tracking-widest uppercase hover:bg-primary/90 shadow-[0_4px_14px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(var(--color-primary),0.2)] shrink-0 transition-all hover:-translate-y-0.5"
+              className="h-12 rounded-xl bg-primary text-primary-foreground font-mono text-sm font-bold px-8 tracking-widest uppercase hover:bg-primary/90 shadow-[0_4px_14px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(var(--color-primary),0.2)] shrink-0 transition-all hover:-translate-y-0.5"
             >
               执行指令
             </Button>

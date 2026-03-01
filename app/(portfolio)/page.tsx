@@ -30,10 +30,10 @@ export default async function PortfolioPage() {
         {/* Modern Sci-Fi Background effects */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           {/* Cyber grid pattern */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-primary)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-primary)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,#000_20%,transparent_100%)] opacity-[0.03] dark:opacity-15"></div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-primary)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-primary)_1px,transparent_1px)] bg-size-[4rem_4rem] mask-[radial-gradient(ellipse_60%_60%_at_50%_40%,#000_20%,transparent_100%)] opacity-[0.03] dark:opacity-15"></div>
 
           {/* Scanline overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,var(--color-background)_50%)] bg-[size:100%_4px] opacity-10 mix-blend-overlay"></div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,var(--color-background)_50%)] bg-size-[100%_4px] opacity-10 mix-blend-overlay"></div>
           <div className="absolute h-1 w-full bg-primary/20 animate-scanline blur-[2px]"></div>
 
           {/* Glowing orbs/nodes */}
@@ -206,7 +206,7 @@ function FeaturedProjectCard({ project }: { project: ProjectModel }) {
             className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 opacity-90 dark:opacity-80 group-hover:opacity-100 dark:mix-blend-luminosity group-hover:mix-blend-normal"
           />
         ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(128,128,128,0.05)_50%,transparent_75%,transparent_100%)] bg-[length:20px_20px] bg-background flex items-center justify-center">
+          <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(128,128,128,0.05)_50%,transparent_75%,transparent_100%)] bg-size-[20px_20px] bg-background flex items-center justify-center">
             <span className="text-muted-foreground font-mono text-sm border border-border px-4 py-2 bg-background/50 backdrop-blur">
               [NO_DATA_FEED]
             </span>
@@ -288,7 +288,7 @@ function RegularProjectCard({ project }: { project: ProjectModel }) {
       <div className="absolute inset-0 bg-linear-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
 
       {/* Image header */}
-      <div className="relative w-full aspect-[16/10] overflow-hidden bg-background border-b border-border">
+      <div className="relative w-full aspect-16/10 overflow-hidden bg-background border-b border-border">
         {project.imageUrl ? (
           <img
             src={project.imageUrl}
@@ -296,7 +296,7 @@ function RegularProjectCard({ project }: { project: ProjectModel }) {
             className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 opacity-90 dark:opacity-70 group-hover:opacity-100 dark:mix-blend-luminosity group-hover:mix-blend-normal"
           />
         ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(128,128,128,0.02)_50%,transparent_75%,transparent_100%)] bg-[length:10px_10px] bg-background flex items-center justify-center">
+          <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(128,128,128,0.02)_50%,transparent_75%,transparent_100%)] bg-size-[10px_10px] bg-background flex items-center justify-center">
             <span className="text-muted-foreground font-mono text-[10px] border border-border px-2 py-1 bg-background/50 backdrop-blur">
               [NO_IMG]
             </span>
