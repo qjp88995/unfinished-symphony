@@ -16,6 +16,7 @@ import { useChat } from "@ai-sdk/react";
 import { ThinkingBlock } from "@/components/thinking-block";
 import { ToolCallBlock } from "@/components/tool-call-block";
 import type { UIMessage, DynamicToolUIPart, ReasoningUIPart } from "ai";
+import { isStaticToolUIPart, getStaticToolName } from "ai";
 
 interface ProjectItem {
   id: string;
@@ -312,6 +313,47 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
                       toolCallId: toolPart.toolCallId,
                       toolName: toolPart.toolName,
                       args: toolPart.input,
+                    }
+              }
+            />
+          );
+        }
+        if (isStaticToolUIPart(part)) {
+          const toolName = String(getStaticToolName(part));
+          const anyPart = part as {
+            toolCallId: string;
+            state: string;
+            input: unknown;
+            output?: unknown;
+            errorText?: string;
+          };
+          const state =
+            anyPart.state === "output-available" ||
+            anyPart.state === "output-error"
+              ? "result"
+              : anyPart.state === "input-streaming"
+                ? "partial-call"
+                : "call";
+          return (
+            <ToolCallBlock
+              key={anyPart.toolCallId}
+              toolInvocation={
+                state === "result"
+                  ? {
+                      state: "result",
+                      toolCallId: anyPart.toolCallId,
+                      toolName,
+                      args: anyPart.input,
+                      result:
+                        anyPart.state === "output-error"
+                          ? { error: anyPart.errorText }
+                          : anyPart.output,
+                    }
+                  : {
+                      state,
+                      toolCallId: anyPart.toolCallId,
+                      toolName,
+                      args: anyPart.input,
                     }
               }
             />
