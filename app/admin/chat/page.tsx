@@ -27,6 +27,64 @@ interface ProjectItem {
   order: number;
 }
 
+const CROP_TARGET_W = 800;
+const CROP_TARGET_H = 450; // 16:9
+const CROP_QUALITY = 0.85;
+
+async function cropAndCompress(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  const { width: sw, height: sh } = bitmap;
+
+  const targetRatio = CROP_TARGET_W / CROP_TARGET_H;
+  const srcRatio = sw / sh;
+
+  let cropW: number, cropH: number, cropX: number, cropY: number;
+  if (srcRatio > targetRatio) {
+    // source is wider — crop horizontally, full height
+    cropH = sh;
+    cropW = sh * targetRatio;
+    cropX = (sw - cropW) / 2;
+    cropY = 0;
+  } else {
+    // source is taller — crop vertically, full width
+    cropW = sw;
+    cropH = sw / targetRatio;
+    cropX = 0;
+    cropY = (sh - cropH) / 2;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = CROP_TARGET_W;
+  canvas.height = CROP_TARGET_H;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(
+    bitmap,
+    cropX,
+    cropY,
+    cropW,
+    cropH,
+    0,
+    0,
+    CROP_TARGET_W,
+    CROP_TARGET_H,
+  );
+  bitmap.close();
+
+  return new Promise<File>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("图片处理失败"));
+          return;
+        }
+        resolve(new File([blob], "image.webp", { type: "image/webp" }));
+      },
+      "image/webp",
+      CROP_QUALITY,
+    );
+  });
+}
+
 function parseTechStack(techStack: string): string[] {
   try {
     return JSON.parse(techStack) as string[];
@@ -201,7 +259,8 @@ export default function ChatPage() {
   ];
 
   async function uploadImage(file: File): Promise<string> {
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const processed = await cropAndCompress(file);
+    const ext = "webp";
     const tokenRes = await fetch(
       `/api/upload/token?ext=${encodeURIComponent(ext)}`,
     );
@@ -225,7 +284,7 @@ export default function ChatPage() {
     const form = new FormData();
     form.append("token", token);
     form.append("key", key);
-    form.append("file", file);
+    form.append("file", processed);
 
     const upRes = await fetch(uploadUrl, { method: "POST", body: form });
     if (!upRes.ok) throw new Error("上传到七牛失败");
