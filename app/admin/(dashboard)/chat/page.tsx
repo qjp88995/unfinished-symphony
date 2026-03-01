@@ -8,7 +8,7 @@ import Mention from "@tiptap/extension-mention";
 import Placeholder from "@tiptap/extension-placeholder";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
-import { ImagePlus, Loader2, Camera, PlusCircle } from "lucide-react";
+import { ImagePlus, Loader2, Camera, PlusCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import MentionList, { type MentionListRef } from "@/components/mention-list";
@@ -415,6 +415,64 @@ export default function ChatPage() {
   projectsRef.current = projects; // updated every render
 
   const [displayItems, setDisplayItems] = useState<DisplayItem[]>([]);
+
+  // 找到 targetId 消息的配对消息 ID（成对删除逻辑）
+  // user 消息 → 向后找最近的 assistant（不跨 clear 边界）
+  // assistant 消息 → 向前找最近的 user（不跨 clear 边界）
+  function findPairIds(items: DisplayItem[], targetId: string): string[] {
+    const idx = items.findIndex(
+      (item) => item.kind === "message" && item.message.id === targetId,
+    );
+    if (idx === -1) return [targetId];
+
+    const target = items[idx];
+    if (target.kind !== "message") return [targetId];
+
+    const role = target.message.role;
+
+    if (role === "user") {
+      for (let i = idx + 1; i < items.length; i++) {
+        if (items[i].kind === "clear") break;
+        if (
+          items[i].kind === "message" &&
+          (
+            items[i] as {
+              kind: "message";
+              message: { role: string; id: string };
+            }
+          ).message.role === "assistant"
+        ) {
+          return [
+            targetId,
+            (items[i] as { kind: "message"; message: { id: string } }).message
+              .id,
+          ];
+        }
+      }
+    } else {
+      for (let i = idx - 1; i >= 0; i--) {
+        if (items[i].kind === "clear") break;
+        if (
+          items[i].kind === "message" &&
+          (
+            items[i] as {
+              kind: "message";
+              message: { role: string; id: string };
+            }
+          ).message.role === "user"
+        ) {
+          return [
+            (items[i] as { kind: "message"; message: { id: string } }).message
+              .id,
+            targetId,
+          ];
+        }
+      }
+    }
+
+    return [targetId];
+  }
+
   const historyLoaded = useRef(false);
   const prevMsgCountRef = useRef(0);
 
@@ -808,6 +866,29 @@ export default function ChatPage() {
     }
   }
 
+  async function handleDeleteMessage(messageId: string) {
+    const idsToDelete = findPairIds(displayItems, messageId);
+
+    // 乐观更新 UI
+    setDisplayItems((prev) =>
+      prev.filter(
+        (item) =>
+          !(item.kind === "message" && idsToDelete.includes(item.message.id)),
+      ),
+    );
+    setMessages((prev) => prev.filter((m) => !idsToDelete.includes(m.id)));
+
+    try {
+      await fetch("/api/chat/history/batch", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: idsToDelete }),
+      });
+    } catch {
+      // 静默失败（乐观更新已生效，下次刷新会同步）
+    }
+  }
+
   // ── Render ───────────────────────────────────────────────────
 
   return (
@@ -913,7 +994,7 @@ export default function ChatPage() {
             return (
               <div
                 key={m.id ?? idx}
-                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex group/msg ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
                   className={`relative max-w-[80%] rounded-none px-5 py-4 text-sm shadow-sm ${
@@ -922,6 +1003,14 @@ export default function ChatPage() {
                       : "bg-card/80 dark:bg-card/50 border border-border text-foreground backdrop-blur-sm"
                   }`}
                 >
+                  {/* 删除按钮：hover 时显示 */}
+                  <button
+                    onClick={() => void handleDeleteMessage(m.id)}
+                    className="absolute -top-2 -right-2 size-5 rounded-full bg-background border border-border flex items-center justify-center opacity-0 group-hover/msg:opacity-100 transition-opacity hover:bg-destructive hover:border-destructive hover:text-destructive-foreground z-10"
+                    title="删除消息"
+                  >
+                    <Trash2 className="size-2.5" />
+                  </button>
                   {/* Tech Accents for message bubbles */}
                   <div
                     className={`absolute top-0 left-0 w-2 h-2 border-t border-l ${m.role === "user" ? "border-primary-foreground/50" : "border-primary/50"}`}
