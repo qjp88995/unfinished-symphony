@@ -1,9 +1,20 @@
 // app/api/projects/events/route.ts
+import { cookies } from "next/headers";
+import { getIronSession } from "iron-session";
+import { sessionOptions, type SessionData } from "@/lib/session";
 import { projectEvents } from "@/lib/project-events";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  const session = await getIronSession<SessionData>(
+    await cookies(),
+    sessionOptions,
+  );
+  if (!session.isAuthenticated) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const encoder = new TextEncoder();
   let listener: ((projects: unknown) => void) | null = null;
 

@@ -139,21 +139,24 @@ export default function ChatPage() {
 
   // Initial project load + SSE subscription for real-time updates
   useEffect(() => {
-    fetch("/api/projects")
-      .then((r) => r.json())
-      .then((d: { success: boolean; data: ProjectItem[] }) => {
-        if (d.success) setProjects(d.data);
-      })
-      .catch(() => {});
+    let sseHasFired = false;
 
     const es = new EventSource("/api/projects/events");
     es.addEventListener("project-changed", (e: MessageEvent<string>) => {
+      sseHasFired = true;
       try {
         setProjects(JSON.parse(e.data) as ProjectItem[]);
       } catch {
         // ignore malformed event
       }
     });
+
+    fetch("/api/projects")
+      .then((r) => r.json())
+      .then((d: { success: boolean; data: ProjectItem[] }) => {
+        if (!sseHasFired && d.success) setProjects(d.data);
+      })
+      .catch(() => {});
 
     return () => es.close();
   }, []);
@@ -262,7 +265,11 @@ export default function ChatPage() {
             </p>
           ) : (
             projects.map((p) => (
-              <ProjectCard key={p.id} project={p} onSelect={handleProjectSelect} />
+              <ProjectCard
+                key={p.id}
+                project={p}
+                onSelect={handleProjectSelect}
+              />
             ))
           )}
         </div>

@@ -50,7 +50,9 @@ export async function executeToolCall(
           techStack: JSON.stringify(techStack ?? []),
         },
       });
-      await emitProjectChange();
+      emitProjectChange().catch((err: unknown) =>
+        console.error("[executor] emitProjectChange failed:", err),
+      );
       return { created: true, project };
     }
 
@@ -61,13 +63,17 @@ export async function executeToolCall(
         data.techStack = JSON.stringify(techStack);
       }
       const project = await prisma.project.update({ where: { id }, data });
-      await emitProjectChange();
+      emitProjectChange().catch((err: unknown) =>
+        console.error("[executor] emitProjectChange failed:", err),
+      );
       return { updated: true, project };
     }
 
     case "delete_project": {
       await prisma.project.delete({ where: { id: params.id } });
-      await emitProjectChange();
+      emitProjectChange().catch((err: unknown) =>
+        console.error("[executor] emitProjectChange failed:", err),
+      );
       return { deleted: true, id: params.id };
     }
 
@@ -76,7 +82,9 @@ export async function executeToolCall(
         where: { id: { in: params.ids } },
         data: { featured: params.featured },
       });
-      await emitProjectChange();
+      emitProjectChange().catch((err: unknown) =>
+        console.error("[executor] emitProjectChange failed:", err),
+      );
       return { updated: true, count: params.ids.length };
     }
 
@@ -90,7 +98,9 @@ export async function executeToolCall(
           prisma.project.update({ where: { id }, data: { order } }),
         ),
       );
-      await emitProjectChange();
+      emitProjectChange().catch((err: unknown) =>
+        console.error("[executor] emitProjectChange failed:", err),
+      );
       return { reordered: true, count: orders.length };
     }
 
