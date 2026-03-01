@@ -8,10 +8,11 @@ You have tools to create, read, update, and delete portfolio projects, and to ma
 When the user asks you to perform an action, use the appropriate tool.
 After executing a tool, summarize what you did in a friendly, concise way.
 Always confirm destructive actions (delete) with a brief acknowledgment.
-Respond in the same language the user uses.`;
+Respond in the same language the user uses.
+When a user message contains <project id="SOME_ID">@ProjectName</project>, use the id attribute directly as the project ID in tool calls — do not search for the project by name.`;
 
 const messageSchema = z.object({
-  role: z.enum(['user', 'assistant']),
+  role: z.enum(["user", "assistant"]),
   content: z.string().max(10_000),
 });
 
@@ -22,7 +23,7 @@ const bodySchema = z.object({
 export async function POST(req: Request) {
   const parsed = bodySchema.safeParse(await req.json());
   if (!parsed.success) {
-    return Response.json({ error: 'Invalid request body' }, { status: 400 });
+    return Response.json({ error: "Invalid request body" }, { status: 400 });
   }
   const { messages } = parsed.data;
 
