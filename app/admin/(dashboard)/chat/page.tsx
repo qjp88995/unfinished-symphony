@@ -15,7 +15,7 @@ import MentionList, { type MentionListRef } from "@/components/mention-list";
 import { useChat } from "@ai-sdk/react";
 import { ThinkingBlock } from "@/components/thinking-block";
 import { ToolCallBlock } from "@/components/tool-call-block";
-import type { UIMessage } from "ai";
+import type { UIMessage, DynamicToolUIPart, ReasoningUIPart } from "ai";
 
 interface ProjectItem {
   id: string;
@@ -278,26 +278,18 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
     <div>
       {parts.map((part, i) => {
         if (part.type === "reasoning") {
-          const reasoningPart = part as { type: "reasoning"; text: string };
-          const done = parts.slice(i + 1).some((p) => p.type === "text");
+          const reasoningPart = part as ReasoningUIPart;
+          const done = reasoningPart.state === "done";
           return (
-            <ThinkingBlock key={i} content={reasoningPart.text} done={done} />
+            <ThinkingBlock
+              key={`reasoning-${i}`}
+              content={reasoningPart.text}
+              done={done}
+            />
           );
         }
         if (part.type === "dynamic-tool") {
-          const toolPart = part as {
-            type: "dynamic-tool";
-            toolName: string;
-            toolCallId: string;
-            state:
-              | "input-streaming"
-              | "input-available"
-              | "output-available"
-              | "output-error";
-            input?: unknown;
-            output?: unknown;
-            errorText?: string;
-          };
+          const toolPart = part as DynamicToolUIPart;
           const state =
             toolPart.state === "output-available" ||
             toolPart.state === "output-error"
@@ -307,7 +299,7 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
                 : "call";
           return (
             <ToolCallBlock
-              key={i}
+              key={toolPart.toolCallId}
               toolInvocation={
                 state === "result"
                   ? {
