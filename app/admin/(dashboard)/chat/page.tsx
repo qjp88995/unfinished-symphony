@@ -1050,14 +1050,34 @@ export default function ChatPage() {
                   }`}
                 >
                   {/* 删除按钮：hover 时显示 */}
-                  <button
-                    onClick={() => void handleDeleteMessage(m.id)}
-                    disabled={isLoading}
-                    className="absolute -top-2 -right-2 size-5 rounded-full bg-background border border-border flex items-center justify-center opacity-0 group-hover/msg:opacity-100 transition-opacity hover:bg-destructive hover:border-destructive hover:text-destructive-foreground z-10 disabled:cursor-not-allowed"
-                    title="删除消息"
-                  >
-                    <Trash2 className="size-2.5" />
-                  </button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        disabled={isLoading}
+                        className={`absolute -top-2 ${m.role === "user" ? "-left-2" : "-right-2"} size-5 rounded-full bg-background border border-border text-foreground flex items-center justify-center opacity-0 group-hover/msg:opacity-100 transition-opacity hover:bg-destructive hover:border-destructive hover:text-destructive-foreground z-10 disabled:cursor-not-allowed`}
+                        title="删除消息"
+                      >
+                        <Trash2 className="size-2.5" />
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>删除该对话？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          此操作将删除该条消息及其关联回复，无法恢复。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => void handleDeleteMessage(m.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          确认删除
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                   {/* Tech Accents for message bubbles */}
                   <div
                     className={`absolute top-0 left-0 w-2 h-2 border-t border-l ${m.role === "user" ? "border-primary-foreground/50" : "border-primary/50"}`}
