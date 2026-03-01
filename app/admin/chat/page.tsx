@@ -56,7 +56,8 @@ async function cropAndCompress(file: File): Promise<File> {
   const canvas = document.createElement("canvas");
   canvas.width = CROP_TARGET_W;
   canvas.height = CROP_TARGET_H;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable");
   ctx.drawImage(
     bitmap,
     cropX,
