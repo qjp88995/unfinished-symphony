@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 
 const bodySchema = z.object({
-  ids: z.array(z.string()).min(1).max(20),
+  ids: z.array(z.string().min(1).max(128)).min(1).max(20),
 });
 
 export async function DELETE(req: Request) {

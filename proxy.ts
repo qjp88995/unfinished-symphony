@@ -45,6 +45,7 @@ export const config = {
     "/api/chat",
     "/api/chat/history",
     "/api/chat/history/clear",
+    "/api/chat/history/batch",
     "/api/providers/:path*",
     "/api/projects/events",
     "/api/upload/token",
