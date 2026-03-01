@@ -1,4 +1,5 @@
-import { streamText, stepCountIs } from "ai";
+import { streamText, stepCountIs, convertToModelMessages } from "ai";
+import type { UIMessage } from "ai";
 import { z } from "zod";
 import { createAIModel } from "@/lib/ai/client";
 import { portfolioTools } from "@/lib/ai/tools";
@@ -11,13 +12,17 @@ Always confirm destructive actions (delete) with a brief acknowledgment.
 Respond in the same language the user uses.
 When a user message contains <project id="SOME_ID">@ProjectName</project>, use the id attribute directly as the project ID in tool calls — do not search for the project by name.`;
 
-const messageSchema = z.object({
-  role: z.enum(["user", "assistant"]),
+// Permissive schema: accept UIMessage shape from useChat, enforce size limits
+const uiMessageSchema = z.object({
+  id: z.string().optional(),
+  role: z.enum(["user", "assistant", "system"]),
   content: z.string().max(10_000),
+  parts: z.array(z.unknown()).optional(),
+  createdAt: z.union([z.string(), z.date()]).optional(),
 });
 
 const bodySchema = z.object({
-  messages: z.array(messageSchema).max(50),
+  messages: z.array(uiMessageSchema).max(50),
 });
 
 export async function POST(req: Request) {
@@ -25,7 +30,6 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return Response.json({ error: "Invalid request body" }, { status: 400 });
   }
-  const { messages } = parsed.data;
 
   let model;
   try {
@@ -39,7 +43,7 @@ export async function POST(req: Request) {
   const result = streamText({
     model,
     system: SYSTEM_PROMPT,
-    messages,
+    messages: await convertToModelMessages(parsed.data.messages as UIMessage[]),
     // portfolioTools uses `inputSchema` (ai SDK v6 format); cast to any to satisfy
     // the CoreTool union type which still expects `parameters` in some type paths.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,5 +52,5 @@ export async function POST(req: Request) {
     stopWhen: stepCountIs(5),
   });
 
-  return result.toTextStreamResponse();
+  return result.toUIMessageStreamResponse({ sendReasoning: true });
 }
