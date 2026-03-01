@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { ChevronDown, ChevronRight, Brain } from "lucide-react";
 
 interface ThinkingBlockProps {
@@ -9,7 +9,7 @@ interface ThinkingBlockProps {
 }
 
 export function ThinkingBlock({ content, done }: ThinkingBlockProps) {
-  // Auto-open while streaming, auto-collapse when done
+  const regionId = useId();
   const [open, setOpen] = useState(true);
   useEffect(() => {
     if (done) setOpen(false);
@@ -19,15 +19,17 @@ export function ThinkingBlock({ content, done }: ThinkingBlockProps) {
     <div className="mb-3 border border-border/40 rounded-lg overflow-hidden text-xs font-mono">
       <button
         type="button"
+        aria-expanded={open}
+        aria-controls={regionId}
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center gap-2 px-3 py-2 bg-muted/20 hover:bg-muted/40 transition-colors text-muted-foreground"
       >
         {open ? (
-          <ChevronDown className="size-3 shrink-0" />
+          <ChevronDown aria-hidden="true" className="size-3 shrink-0" />
         ) : (
-          <ChevronRight className="size-3 shrink-0" />
+          <ChevronRight aria-hidden="true" className="size-3 shrink-0" />
         )}
-        <Brain className="size-3 shrink-0" />
+        <Brain aria-hidden="true" className="size-3 shrink-0" />
         <span className="uppercase tracking-wider text-[10px]">
           {done ? "查看思考过程" : "思考中..."}
         </span>
@@ -36,7 +38,12 @@ export function ThinkingBlock({ content, done }: ThinkingBlockProps) {
         )}
       </button>
       {open && (
-        <div className="px-3 py-2 bg-muted/10 text-muted-foreground/80 leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
+        <div
+          id={regionId}
+          role="region"
+          aria-label="思考过程"
+          className="px-3 py-2 bg-muted/10 text-muted-foreground/80 leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto"
+        >
           {content || "…"}
         </div>
       )}
