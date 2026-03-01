@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
-import { ImagePlus, Loader2 } from "lucide-react";
+import { ImagePlus, Loader2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -38,9 +38,13 @@ function parseTechStack(techStack: string): string[] {
 function ProjectCard({
   project,
   onSelect,
+  onUpload,
+  isUploading,
 }: {
   project: ProjectItem;
   onSelect: (title: string) => void;
+  onUpload: (projectId: string) => void;
+  isUploading: boolean;
 }) {
   const techs = parseTechStack(project.techStack);
   const visibleTechs = techs.slice(0, 3);
@@ -51,20 +55,35 @@ function ProjectCard({
       className="rounded-lg border border-border bg-card p-3 cursor-pointer hover:border-border/80 hover:bg-accent/50 transition-colors"
       onClick={() => onSelect(project.title)}
     >
-      {project.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={project.imageUrl}
-          alt={project.title}
-          className="w-full h-24 object-cover rounded mb-2"
-        />
-      ) : (
-        <div className="w-full h-24 rounded mb-2 bg-linear-to-br from-violet-600/20 to-blue-600/20 flex items-center justify-center">
-          <span className="text-2xl font-bold text-muted-foreground/50">
-            {project.title.charAt(0).toUpperCase()}
-          </span>
+      <div className="relative group mb-2">
+        {project.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={project.imageUrl}
+            alt={project.title}
+            className="w-full h-24 object-cover rounded"
+          />
+        ) : (
+          <div className="w-full h-24 rounded bg-linear-to-br from-violet-600/20 to-blue-600/20 flex items-center justify-center">
+            <span className="text-2xl font-bold text-muted-foreground/50">
+              {project.title.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
+        <div
+          className="absolute inset-0 rounded bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onUpload(project.id);
+          }}
+        >
+          {isUploading ? (
+            <Loader2 className="size-5 text-white animate-spin" />
+          ) : (
+            <Camera className="size-5 text-white" />
+          )}
         </div>
-      )}
+      </div>
 
       <div className="flex items-start justify-between gap-1 mb-1">
         <h3 className="text-sm font-medium text-foreground line-clamp-1 flex-1">
@@ -347,6 +366,13 @@ export default function ChatPage() {
           </span>
         </div>
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <input
+            ref={projectFileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleProjectFileChange}
+          />
           {projects.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-8">
               暂无项目
@@ -357,6 +383,11 @@ export default function ChatPage() {
                 key={p.id}
                 project={p}
                 onSelect={handleProjectSelect}
+                onUpload={(projectId) => {
+                  uploadTargetProjectIdRef.current = projectId;
+                  projectFileInputRef.current?.click();
+                }}
+                isUploading={uploadingProjectId === p.id}
               />
             ))
           )}
