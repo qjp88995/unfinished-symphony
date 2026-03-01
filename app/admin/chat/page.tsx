@@ -31,6 +31,14 @@ const CROP_TARGET_W = 800;
 const CROP_TARGET_H = 450; // 16:9
 const CROP_QUALITY = 0.85;
 
+const ALLOWED_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/avif",
+] as const;
+
 async function cropAndCompress(file: File): Promise<File> {
   const bitmap = await createImageBitmap(file);
   const { width: sw, height: sh } = bitmap;
@@ -251,14 +259,6 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const ALLOWED_MIME_TYPES = [
-    "image/jpeg",
-    "image/png",
-    "image/gif",
-    "image/webp",
-    "image/avif",
-  ];
-
   async function uploadImage(file: File): Promise<string> {
     const processed = await cropAndCompress(file);
     const ext = "webp";
@@ -298,7 +298,7 @@ export default function ChatPage() {
     e.target.value = "";
     if (!file) return;
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
       setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
       return;
     }
@@ -328,7 +328,7 @@ export default function ChatPage() {
     e.target.value = "";
     if (!file || !projectId) return;
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
       setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
       return;
     }
@@ -370,14 +370,21 @@ export default function ChatPage() {
   async function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
     const items = Array.from(e.clipboardData.items);
     const imageItem = items.find(
-      (item) => item.kind === "file" && ALLOWED_MIME_TYPES.includes(item.type),
+      (item) =>
+        item.kind === "file" &&
+        (ALLOWED_MIME_TYPES as readonly string[]).includes(item.type),
     );
     if (!imageItem) return;
+
+    e.preventDefault();
 
     const file = imageItem.getAsFile();
     if (!file) return;
 
-    e.preventDefault();
+    if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
+      setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
+      return;
+    }
 
     if (file.size > 5 * 1024 * 1024) {
       setError("图片大小不能超过 5MB");
