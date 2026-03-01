@@ -816,7 +816,7 @@ export default function ChatPage() {
               {/* Tiptap editor replaces <Textarea> */}
               <EditorContent
                 editor={editor}
-                className="w-full pl-9 pr-4 font-mono text-sm text-foreground min-h-12 max-h-32 overflow-y-auto py-3.5 [&_.ProseMirror]:outline-none [&_.ProseMirror]:break-words"
+                className="w-full pl-9 pr-4 font-mono text-sm text-foreground min-h-12 max-h-32 overflow-y-auto py-3.5 [&_.ProseMirror]:outline-none [&_.ProseMirror]:wrap-break-word"
               />
             </div>
 
