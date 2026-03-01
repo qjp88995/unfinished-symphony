@@ -1,7 +1,7 @@
 // app/admin/chat/page.tsx
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useEditor, EditorContent, ReactRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Mention from "@tiptap/extension-mention";
@@ -12,12 +12,10 @@ import { ImagePlus, Loader2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import MentionList, { type MentionListRef } from "@/components/mention-list";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
+import { useChat } from "@ai-sdk/react";
+import { ThinkingBlock } from "@/components/thinking-block";
+import { ToolCallBlock } from "@/components/tool-call-block";
+import type { UIMessage } from "ai";
 
 interface ProjectItem {
   id: string;
@@ -268,14 +266,89 @@ function ProjectCard({
   );
 }
 
+type AssistantPart = UIMessage["parts"][number];
+
+function AssistantContent({ parts }: { parts: AssistantPart[] }) {
+  const textContent = parts
+    .filter((p) => p.type === "text")
+    .map((p) => (p as { type: "text"; text: string }).text)
+    .join("");
+
+  return (
+    <div>
+      {parts.map((part, i) => {
+        if (part.type === "reasoning") {
+          const reasoningPart = part as { type: "reasoning"; text: string };
+          const done = parts.slice(i + 1).some((p) => p.type === "text");
+          return (
+            <ThinkingBlock key={i} content={reasoningPart.text} done={done} />
+          );
+        }
+        if (part.type === "dynamic-tool") {
+          const toolPart = part as {
+            type: "dynamic-tool";
+            toolName: string;
+            toolCallId: string;
+            state:
+              | "input-streaming"
+              | "input-available"
+              | "output-available"
+              | "output-error";
+            input?: unknown;
+            output?: unknown;
+            errorText?: string;
+          };
+          const state =
+            toolPart.state === "output-available" ||
+            toolPart.state === "output-error"
+              ? "result"
+              : toolPart.state === "input-streaming"
+                ? "partial-call"
+                : "call";
+          return (
+            <ToolCallBlock
+              key={i}
+              toolInvocation={
+                state === "result"
+                  ? {
+                      state: "result",
+                      toolCallId: toolPart.toolCallId,
+                      toolName: toolPart.toolName,
+                      args: toolPart.input,
+                      result:
+                        toolPart.state === "output-error"
+                          ? { error: toolPart.errorText }
+                          : toolPart.output,
+                    }
+                  : {
+                      state,
+                      toolCallId: toolPart.toolCallId,
+                      toolName: toolPart.toolName,
+                      args: toolPart.input,
+                    }
+              }
+            />
+          );
+        }
+        return null;
+      })}
+      {textContent && (
+        <div className="prose prose-sm prose-invert max-w-none font-mono text-xs leading-relaxed">
+          <ReactMarkdown>{textContent}</ReactMarkdown>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { messages, sendMessage, status, error: chatError } = useChat();
+  const isLoading = status === "submitted" || status === "streaming";
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [uploadingProjectId, setUploadingProjectId] = useState<string | null>(
     null,
   );
@@ -358,16 +431,16 @@ export default function ChatPage() {
     e.target.value = "";
     if (!file) return;
     if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
-      setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
+      setUploadError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError("图片大小不能超过 5MB");
+      setUploadError("图片大小不能超过 5MB");
       return;
     }
 
     setIsUploading(true);
-    setError("");
+    setUploadError("");
     try {
       const url = await uploadImage(file);
       editor
@@ -376,7 +449,7 @@ export default function ChatPage() {
         .insertContent(url + "\n")
         .run();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "上传失败");
+      setUploadError(err instanceof Error ? err.message : "上传失败");
     } finally {
       setIsUploading(false);
     }
@@ -390,16 +463,16 @@ export default function ChatPage() {
     e.target.value = "";
     if (!file || !projectId) return;
     if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
-      setError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
+      setUploadError("仅支持 JPG、PNG、GIF、WebP、AVIF 格式");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError("图片大小不能超过 5MB");
+      setUploadError("图片大小不能超过 5MB");
       return;
     }
 
     setUploadingProjectId(projectId);
-    setError("");
+    setUploadError("");
     try {
       const url = await uploadImage(file);
       const updateRes = await fetch(`/api/projects/${projectId}`, {
@@ -415,7 +488,7 @@ export default function ChatPage() {
       }
       // SSE will push the updated project list automatically
     } catch (err) {
-      setError(err instanceof Error ? err.message : "上传失败");
+      setUploadError(err instanceof Error ? err.message : "上传失败");
     } finally {
       setUploadingProjectId(null);
       uploadTargetProjectIdRef.current = null;
@@ -540,12 +613,12 @@ export default function ChatPage() {
         if (!file) return false;
 
         if (file.size > 5 * 1024 * 1024) {
-          setError("图片大小不能超过 5MB");
+          setUploadError("图片大小不能超过 5MB");
           return true;
         }
 
         setIsUploading(true);
-        setError("");
+        setUploadError("");
         uploadImage(file)
           .then((url) => {
             editor
@@ -555,7 +628,7 @@ export default function ChatPage() {
               .run();
           })
           .catch((err: unknown) => {
-            setError(err instanceof Error ? err.message : "上传失败");
+            setUploadError(err instanceof Error ? err.message : "上传失败");
           })
           .finally(() => setIsUploading(false));
 
@@ -574,7 +647,7 @@ export default function ChatPage() {
     const text = editor.getText({ blockSeparator: "\n" });
     editor.commands.clearContent();
     editor.commands.focus();
-    sendMessage(text);
+    void sendMessage({ text });
   };
 
   // ── Project card click: insert mention at cursor ─────────────
@@ -591,74 +664,6 @@ export default function ChatPage() {
       .insertContent(" ") // space after chip for comfortable typing
       .run();
   }
-
-  // ── Send message ─────────────────────────────────────────────
-
-  const sendMessage = useCallback(
-    async (userContent: string) => {
-      if (!userContent.trim() || isLoading) return;
-
-      const userMessage: Message = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content: userContent.trim(),
-      };
-
-      const messagesWithUser = [...messages, userMessage];
-      setMessages(messagesWithUser);
-      setIsLoading(true);
-      setError("");
-
-      const assistantId = crypto.randomUUID();
-      setMessages((prev) => [
-        ...prev,
-        { id: assistantId, role: "assistant", content: "" },
-      ]);
-
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: messagesWithUser.map(({ role, content }) => ({
-              role,
-              content,
-            })),
-          }),
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(
-            (data as { error?: string }).error || `Error ${response.status}`,
-          );
-        }
-
-        if (!response.body) throw new Error("响应体为空，无法读取流");
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let accumulated = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          accumulated += decoder.decode(value, { stream: true });
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, content: accumulated } : m,
-            ),
-          );
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "出现错误";
-        setError(message);
-        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [messages, isLoading],
-  );
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -765,12 +770,16 @@ export default function ChatPage() {
                 ></div>
 
                 {m.role === "assistant" ? (
-                  <div className="prose prose-sm prose-invert max-w-none font-mono text-xs leading-relaxed">
-                    <ReactMarkdown>{m.content || "…"}</ReactMarkdown>
-                  </div>
+                  <AssistantContent parts={m.parts ?? []} />
                 ) : (
                   <p className="font-mono text-xs tracking-wide">
-                    {renderUserContent(m.content, true)}
+                    {renderUserContent(
+                      m.parts
+                        .filter((p) => p.type === "text")
+                        .map((p) => (p as { type: "text"; text: string }).text)
+                        .join(""),
+                      true,
+                    )}
                   </p>
                 )}
               </div>
@@ -786,9 +795,15 @@ export default function ChatPage() {
             </div>
           )}
 
-          {error && (
+          {chatError && (
             <div className="text-destructive text-sm text-center py-2">
-              {error}
+              {chatError.message}
+            </div>
+          )}
+
+          {uploadError && (
+            <div className="text-destructive text-sm text-center py-2">
+              {uploadError}
             </div>
           )}
 
