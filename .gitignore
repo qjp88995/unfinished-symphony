@@ -49,3 +49,5 @@ next-env.d.ts
 
 # local dev db
 dev.db
+
+.worktrees/
