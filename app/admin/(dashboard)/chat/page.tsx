@@ -301,7 +301,7 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
           const toolPart = part as DynamicToolUIPart;
           const state =
             toolPart.state === "output-available" ||
-            toolPart.state === "output-error"
+              toolPart.state === "output-error"
               ? "result"
               : toolPart.state === "input-streaming"
                 ? "partial-call"
@@ -312,21 +312,21 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
               toolInvocation={
                 state === "result"
                   ? {
-                      state: "result",
-                      toolCallId: toolPart.toolCallId,
-                      toolName: toolPart.toolName,
-                      args: toolPart.input,
-                      result:
-                        toolPart.state === "output-error"
-                          ? { error: toolPart.errorText }
-                          : toolPart.output,
-                    }
+                    state: "result",
+                    toolCallId: toolPart.toolCallId,
+                    toolName: toolPart.toolName,
+                    args: toolPart.input,
+                    result:
+                      toolPart.state === "output-error"
+                        ? { error: toolPart.errorText }
+                        : toolPart.output,
+                  }
                   : {
-                      state,
-                      toolCallId: toolPart.toolCallId,
-                      toolName: toolPart.toolName,
-                      args: toolPart.input,
-                    }
+                    state,
+                    toolCallId: toolPart.toolCallId,
+                    toolName: toolPart.toolName,
+                    args: toolPart.input,
+                  }
               }
             />
           );
@@ -342,7 +342,7 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
           };
           const state =
             anyPart.state === "output-available" ||
-            anyPart.state === "output-error"
+              anyPart.state === "output-error"
               ? "result"
               : anyPart.state === "input-streaming"
                 ? "partial-call"
@@ -353,21 +353,21 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
               toolInvocation={
                 state === "result"
                   ? {
-                      state: "result",
-                      toolCallId: anyPart.toolCallId,
-                      toolName,
-                      args: anyPart.input,
-                      result:
-                        anyPart.state === "output-error"
-                          ? { error: anyPart.errorText }
-                          : anyPart.output,
-                    }
+                    state: "result",
+                    toolCallId: anyPart.toolCallId,
+                    toolName,
+                    args: anyPart.input,
+                    result:
+                      anyPart.state === "output-error"
+                        ? { error: anyPart.errorText }
+                        : anyPart.output,
+                  }
                   : {
-                      state,
-                      toolCallId: anyPart.toolCallId,
-                      toolName,
-                      args: anyPart.input,
-                    }
+                    state,
+                    toolCallId: anyPart.toolCallId,
+                    toolName,
+                    args: anyPart.input,
+                  }
               }
             />
           );
@@ -417,7 +417,7 @@ export default function ChatPage() {
   const uploadTargetProjectIdRef = useRef<string | null>(null);
 
   // Ref to avoid stale closure in Tiptap's editorProps.handleKeyDown
-  const handleSubmitRef = useRef<() => void>(() => {});
+  const handleSubmitRef = useRef<() => void>(() => { });
   // Track whether the @mention suggestion dropdown is open
   const isSuggestionActiveRef = useRef(false);
 
@@ -487,7 +487,7 @@ export default function ChatPage() {
       .then((d: { success: boolean; data: ProjectItem[] }) => {
         if (!sseHasFired && d.success) setProjects(d.data);
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return () => es.close();
   }, []);
@@ -956,47 +956,73 @@ export default function ChatPage() {
       {/* Right panel: chat */}
       <div className="flex flex-col flex-1 min-w-0 relative z-10 bg-background/30 backdrop-blur-sm">
         {/* Chat header */}
-        <div className="shrink-0 flex items-center justify-end gap-2 px-6 py-2 border-b border-border/30">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isLoading}
-                className="text-[10px] font-mono text-muted-foreground hover:text-destructive gap-1.5 h-7"
-              >
-                <Trash2 className="size-3" />
-                清空
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>清空全部聊天记录？</AlertDialogTitle>
-                <AlertDialogDescription>
-                  此操作将永久删除所有聊天记录，无法恢复。
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => void handleClearAll()}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  确认清空
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+        <div className="shrink-0 flex items-center justify-between px-6 py-2 border-b border-border/30 bg-background/50 backdrop-blur-sm">
+          {/* Left Metadata */}
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-mono text-muted-foreground/60 tracking-widest uppercase mb-0.5">
+                STATUS
+              </span>
+              <span className="text-[11px] font-mono text-primary flex items-center gap-1.5 tracking-wider">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
+                </span>
+                LINK_ESTABLISHED
+              </span>
+            </div>
+            <div className="w-px h-6 bg-border/40 mx-2 hidden sm:block"></div>
+            <div className="hidden sm:flex flex-col">
+              <span className="text-[10px] font-mono text-muted-foreground/60 tracking-widest uppercase mb-0.5">
+                SESSION_ID
+              </span>
+              <span className="text-[11px] font-mono text-muted-foreground tracking-wider">
+                0xSYS_TERM_01
+              </span>
+            </div>
+          </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-[10px] font-mono text-muted-foreground hover:text-foreground gap-1.5 h-7"
-            onClick={() => void handleNewSession()}
-          >
-            <PlusCircle className="size-3" />
-            新对话
-          </Button>
+          {/* Right Actions */}
+          <div className="flex items-center gap-3">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isLoading}
+                  className="rounded-none border-border/50 bg-transparent text-[10px] font-mono text-muted-foreground hover:border-destructive hover:text-destructive hover:bg-destructive/10 dark:hover:shadow-[0_0_12px_rgba(220,38,38,0.3)] hover:shadow-sm gap-1.5 h-7 transition-all tracking-wider"
+                >
+                  [ &gt;_ CLEAR ]
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>终止当前进程？</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    此操作将永久删除所有聊天记录，清空数据库实例，无法恢复。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="rounded-none font-mono text-xs border-border/50">取消</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => void handleClearAll()}
+                    className="rounded-none font-mono text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    确认终止
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <Button
+              variant="default"
+              size="sm"
+              className="rounded-none bg-primary text-primary-foreground text-[10px] font-mono hover:bg-primary/90 dark:shadow-[0_0_15px_rgba(var(--color-primary),0.3)] hover:shadow-[0_0_15px_rgba(var(--color-primary),0.5)] gap-1.5 h-7 transition-all tracking-wider"
+              onClick={() => void handleNewSession()}
+            >
+              [ + NEW_SESSION ]
+            </Button>
+          </div>
         </div>
 
         {/* Messages */}
@@ -1043,35 +1069,35 @@ export default function ChatPage() {
                 className={`flex group/msg ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`relative max-w-[80%] rounded-none px-5 py-4 text-sm shadow-sm ${
-                    m.role === "user"
-                      ? "bg-primary border border-primary/50 text-primary-foreground"
-                      : "bg-card/80 dark:bg-card/50 border border-border text-foreground backdrop-blur-sm"
-                  }`}
+                  className={`relative max-w-[80%] rounded-none px-5 py-4 text-sm shadow-sm ${m.role === "user"
+                    ? "bg-primary border border-primary/50 text-primary-foreground"
+                    : "bg-card/80 dark:bg-card/50 border border-border text-foreground backdrop-blur-sm"
+                    }`}
                 >
                   {/* 删除按钮：hover 时显示 */}
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <button
                         disabled={isLoading}
-                        className={`absolute -top-2 ${m.role === "user" ? "-left-2" : "-right-2"} size-5 rounded-full bg-background border border-border text-foreground flex items-center justify-center opacity-0 group-hover/msg:opacity-100 transition-opacity hover:bg-destructive hover:border-destructive hover:text-destructive-foreground z-10 disabled:cursor-not-allowed`}
+                        className={`absolute -top-3 ${m.role === "user" ? "-left-1" : "-right-1"} h-5 px-2 bg-background border border-border text-muted-foreground flex items-center justify-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-all hover:bg-destructive/10 hover:border-destructive hover:text-destructive hover:shadow-[0_0_8px_rgba(220,38,38,0.3)] z-10 disabled:cursor-not-allowed rounded-none font-mono text-[9px]`}
                         title="删除消息"
                       >
                         <Trash2 className="size-2.5" />
+                        <span className="hidden sm:inline">DEL</span>
                       </button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>删除该对话？</AlertDialogTitle>
+                        <AlertDialogTitle>删除该数据块？</AlertDialogTitle>
                         <AlertDialogDescription>
-                          此操作将删除该条消息及其关联回复，无法恢复。
+                          此操作将永久破坏该条消息及其关联回复的数据结构，无法恢复。
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-none font-mono text-xs border-border/50">取消</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => void handleDeleteMessage(m.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          className="rounded-none font-mono text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
                           确认删除
                         </AlertDialogAction>
@@ -1121,17 +1147,19 @@ export default function ChatPage() {
             </div>
           )}
 
-          {uploadError && (
-            <div className="text-destructive text-sm text-center py-2">
-              {uploadError}
-            </div>
-          )}
+          {
+            uploadError && (
+              <div className="text-destructive text-sm text-center py-2">
+                {uploadError}
+              </div>
+            )
+          }
 
           <div ref={bottomRef} />
-        </div>
+        </div >
 
         {/* Input */}
-        <div className="border-t border-border/40 bg-background/70 backdrop-blur-xl p-4 shrink-0 relative shadow-[0_-4px_24px_rgba(0,0,0,0.02)]">
+        < div className="border-t border-border/40 bg-background/70 backdrop-blur-xl p-4 shrink-0 relative shadow-[0_-4px_24px_rgba(0,0,0,0.02)]" >
           <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent"></div>
           <form
             onSubmit={handleSubmit}
@@ -1178,8 +1206,8 @@ export default function ChatPage() {
               执行指令
             </Button>
           </form>
-        </div>
-      </div>
-    </div>
+        </div >
+      </div >
+    </div >
   );
 }
