@@ -45,9 +45,10 @@ next-env.d.ts
 
 
 # claude
-.claude
+.claude/settings.local.json
+.claude/plans/
 
-# local dev db
-dev.db
+# db
+*.db
 
 .worktrees/
