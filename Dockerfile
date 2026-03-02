@@ -21,6 +21,12 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 RUN pnpm prisma generate
+
+# Provide dummy env vars for Next.js build (page data collection imports session module)
+# These are NOT used at runtime — real values come from environment/docker-compose
+ARG COOKIE_SECRET="build-time-placeholder-secret-at-least-32-characters-long"
+ENV COOKIE_SECRET=${COOKIE_SECRET}
+
 RUN pnpm build
 
 # Stage 3: Runner
