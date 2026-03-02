@@ -22,6 +22,7 @@ export default async function PortfolioPage() {
   const projects = await getProjects();
   const featured = projects.filter((p) => p.featured);
   const rest = projects.filter((p) => !p.featured);
+  const contactEmail = process.env.CONTACT_EMAIL ?? "";
 
   return (
     <>
@@ -81,7 +82,7 @@ export default async function PortfolioPage() {
               <ArrowDown className="size-4 animate-bounce relative z-10" />
             </a>
             <a
-              href="mailto:hello@example.com"
+              href={contactEmail ? `mailto:${contactEmail}` : undefined}
               className="group relative inline-flex items-center justify-center gap-3 border border-border dark:border-primary/50 bg-secondary/80 dark:bg-background/50 px-8 py-4 text-sm font-mono font-bold text-foreground backdrop-blur uppercase tracking-wider transition-all hover:bg-secondary dark:hover:bg-primary/10 hover:border-border dark:hover:border-primary shadow-sm dark:shadow-[inset_0_0_10px_rgba(0,243,255,0)] dark:hover:shadow-[inset_0_0_20px_rgba(0,243,255,0.2)]"
             >
               <span className="w-2 h-2 bg-primary/70 dark:bg-primary group-hover:animate-ping"></span>
