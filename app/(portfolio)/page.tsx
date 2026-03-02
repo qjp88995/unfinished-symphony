@@ -3,7 +3,6 @@ import type { Project as ProjectModel } from "@/app/generated/prisma/client";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ArrowDown, ExternalLink, Github, ArrowRight } from "lucide-react";
-import { headers } from "next/headers";
 
 async function getProjects() {
   return prisma.project.findMany({
@@ -24,13 +23,6 @@ export default async function PortfolioPage() {
   const featured = projects.filter((p) => p.featured);
   const rest = projects.filter((p) => !p.featured);
   const contactEmail = process.env.CONTACT_EMAIL ?? "";
-
-  const host = (await headers()).get("host") ?? "";
-  const icpNumber = host.includes("qinjiapeng.com")
-    ? "晋ICP备19003824号-2"
-    : host.includes("qinjiapeng.cn")
-      ? "晋ICP备19003824号-1"
-      : null;
 
   return (
     <>
@@ -191,20 +183,6 @@ export default async function PortfolioPage() {
           </div>
         )}
       </section>
-
-      {/* Footer */}
-      {icpNumber && (
-        <footer className="py-6 border-t border-border/50 text-center">
-          <a
-            href="https://beian.miit.gov.cn/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-mono text-muted-foreground/60 hover:text-muted-foreground transition-colors tracking-wider"
-          >
-            {icpNumber}
-          </a>
-        </footer>
-      )}
     </>
   );
 }
