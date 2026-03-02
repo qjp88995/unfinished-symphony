@@ -6,9 +6,12 @@
 
 - **公开展示**：暗/亮主题切换，渐变光晕背景，作品卡片悬停发光效果
 - **AI 对话管理**：用自然语言增删改查作品，支持批量操作和精选标记；支持 @project 提及和图片粘贴
+- **对话持久化**：聊天记录自动存储，上下文自动压缩，支持清除和批量删除
+- **消息渲染**：Markdown + KaTeX 数学公式，AI 思考过程折叠展示，tool 调用可视化
 - **多模型支持**：可配置任意 OpenAI 兼容的 API（包括 Anthropic、本地模型等）
 - **简单认证**：密码保护后台，httpOnly cookie session
 - **图床集成**：七牛云存储，从剪贴板粘贴图片并自动上传
+- **Docker 部署**：多阶段构建，自动数据库迁移
 
 ## 快速开始
 
@@ -27,6 +30,10 @@ pnpm prisma generate
 DATABASE_URL="file:./dev.db"
 ADMIN_PASSWORD_HASH="<见下方生成方式>"
 COOKIE_SECRET="<见下方生成方式>"
+CONTACT_EMAIL="hello@example.com"
+
+# ICP 备案号映射（可选，JSON 格式）
+ICP_MAP={"example.cn":"晋ICP备XXXXXXXX号-1"}
 
 # 七牛云图床（可选）
 QINIU_ACCESS_KEY="<AccessKey>"
@@ -61,6 +68,18 @@ pnpm dev
 ```
 
 访问 `http://localhost:3000`。
+
+## Docker 部署
+
+```bash
+# 配置 .env（DATABASE_URL 需改为 volume 路径）
+DATABASE_URL="file:/app/data/prod.db"
+
+# 构建并启动（自动执行数据库迁移）
+docker compose up -d --build
+```
+
+容器以非 root 用户运行，SQLite 数据通过 `db-data` volume 持久化到 `/app/data`。
 
 ## 使用方式
 
@@ -99,11 +118,13 @@ pnpm dev
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript 5**
 - **Tailwind CSS 4** + **shadcn/ui** + **next-themes**（暗/亮主题）
-- **Tiptap**（富文本编辑器，@mention + 图片粘贴）
+- **Tiptap 3**（富文本编辑器，@mention + 图片粘贴）
 - **Vercel AI SDK v6**（Function Calling，流式输出）
 - **Prisma 7** + **SQLite**（better-sqlite3 driver adapter）
 - **iron-session v8**（加密 cookie 认证）
+- **KaTeX**（数学公式渲染）
 - **七牛云 SDK**（图片上传）
+- **Docker**（多阶段构建，生产部署）
 
 ## 常用命令
 
@@ -114,4 +135,5 @@ pnpm lint                              # ESLint
 pnpm prisma generate                   # 重新生成 Prisma Client
 pnpm prisma migrate dev --name <name>  # 新建迁移
 pnpm prisma studio                     # 数据库 GUI
+docker compose up -d --build           # Docker 构建并启动
 ```

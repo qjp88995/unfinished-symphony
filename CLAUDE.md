@@ -7,9 +7,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 个人前端作品集网站，核心特性：
 - **公开展示**：暗/亮主题切换，渐变光晕背景，作品卡片悬停发光效果
 - **AI 对话管理**：通过自然语言对作品数据进行增删改查、批量操作；支持 @project 提及和图片粘贴上传
+- **对话持久化**：聊天记录存入数据库，自动压缩历史上下文，支持清除和批量删除
 - **多模型支持**：可配置任意 OpenAI 兼容的提供商（baseURL + apiKey + model）
 - **简单密码认证**：bcrypt + iron-session cookie 保护后台
 - **图床集成**：七牛云存储，支持从剪贴板粘贴图片并上传
+- **Docker 部署**：多阶段构建，自动数据库迁移
 
 ## 技术栈
 
@@ -17,10 +19,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Tailwind CSS 4**（CSS-first，`globals.css` 用 `@import "tailwindcss"`，无 `tailwind.config.js`）
 - **shadcn/ui**（组件在 `components/ui/`，无 CDN 依赖）
 - **next-themes**（`ThemeProvider` 管理暗/亮主题，`defaultTheme="dark"`，`enableSystem`）
-- **Tiptap**（富文本编辑器，替代 textarea；支持 @project 提及、图片粘贴）
+- **Tiptap 3**（富文本编辑器，替代 textarea；支持 @project 提及、图片粘贴）
 - **Vercel AI SDK v6**（`ai` 包，`streamText` + `inputSchema` tool 格式）
 - **Prisma 7** + **SQLite**（需 `@prisma/adapter-better-sqlite3` driver adapter）
 - **iron-session v8**（加密 cookie，Edge Runtime 使用三参数 API）
+- **KaTeX**（数学公式渲染，集成在 Markdown 渲染组件中）
 - **七牛云 SDK**（`qiniu` 包，服务端生成上传 token）
 - **pnpm** 包管理器
 
@@ -37,6 +40,9 @@ pnpm prisma generate                   # 重新生成 Prisma Client（必须在 
 pnpm prisma migrate dev --name <name>  # 创建并应用迁移
 pnpm prisma migrate deploy             # 生产环境迁移
 pnpm prisma studio                     # 数据库 GUI
+
+# Docker
+docker compose up --build              # 构建并启动（自动运行迁移）
 ```
 
 ## 项目结构
@@ -57,6 +63,10 @@ app/
   api/
     auth/route.ts       # POST 登录 / DELETE 登出
     chat/route.ts       # POST 流式 AI 对话（+ Tool Calling）
+    chat/history/
+      route.ts          # GET 加载聊天历史
+      clear/route.ts    # POST 清除聊天历史（插入 clear 标记）
+      batch/route.ts    # POST 批量删除聊天记录
     projects/route.ts   # GET/POST
     projects/[id]/route.ts    # PUT/DELETE
     projects/events/route.ts  # GET SSE 实时推送项目变更
@@ -71,6 +81,7 @@ lib/
   session.ts            # iron-session 配置（SessionData + sessionOptions）
   utils.ts              # cn() 工具函数（clsx + tailwind-merge）
   project-events.ts     # Node.js EventEmitter 单例，项目变更事件总线
+  chat-history.ts       # 聊天记录持久化（存储/加载/压缩/清除）
   ai/
     client.ts           # createAIModel()：从 DB 读取默认提供商配置
     tools.ts            # portfolioTools：11 个 tool 定义（ai SDK v6 inputSchema）
@@ -81,10 +92,19 @@ components/
   theme-provider.tsx    # next-themes ThemeProvider 封装
   theme-toggle.tsx      # 暗/亮主题切换按钮（悬浮固定）
   mention-list.tsx      # @project 提及下拉列表（Tiptap 插件）
+  markdown-renderer.tsx # Markdown 渲染（含 KaTeX 数学公式）
+  thinking-block.tsx    # AI 扩展思考过程折叠显示
+  tool-call-block.tsx   # AI tool 调用可视化展示
+  clear-divider.tsx     # 聊天清除分割线
+  compression-divider.tsx # 聊天压缩分割线
 
-proxy.ts                # Next.js 16 中间件（保护 /admin/* + /api/chat + /api/providers/* + /api/projects/events + /api/upload/token）
-prisma/schema.prisma    # Project + AIProvider 模型
+proxy.ts                # Next.js 16 中间件（保护 /admin/* + /api/chat + /api/chat/history/* + /api/providers/* + /api/projects/events + /api/upload/token）
+prisma/schema.prisma    # Project + AIProvider + ChatRecord 模型
 app/generated/prisma/   # Prisma Client 生成产物（勿手动修改）
+
+Dockerfile              # 三阶段多阶段生产构建
+docker-compose.yml      # Docker Compose（db-data volume）
+entrypoint.sh           # 入口脚本（自动迁移 + 启动）
 ```
 
 路径别名：`@/*` 映射到项目根目录。
@@ -152,7 +172,7 @@ const session = await getIronSession<SessionData>(await cookies(), sessionOption
 
 ### AI 提供商安全
 - API Key 只在服务端 Route Handler 中读取，`GET /api/providers` 不返回 apiKey
-- `/api/chat`、`/api/providers/*`、`/api/projects/events`、`/api/upload/token` 由 `proxy.ts` 中间件验证 session
+- `/api/chat`、`/api/chat/history/*`、`/api/providers/*`、`/api/projects/events`、`/api/upload/token` 由 `proxy.ts` 中间件验证 session
 - Chat API 对请求体做 Zod 验证（最多 50 条消息，每条最多 10000 字符）
 
 ### 七牛云图片上传
@@ -168,11 +188,32 @@ const session = await getIronSession<SessionData>(await cookies(), sessionOption
 - `Enter` 提交，`Shift+Enter` 换行；提及下拉激活时 `Enter` 选中而非提交
 - 粘贴图片时自动上传到七牛云并插入 `![...](url)` 语法
 
+### 聊天记录持久化
+- 消息以 `ChatRecord` 存入 SQLite，`type` 区分 `user`/`assistant`/`compression`/`clear`
+- `parts` 字段存储 JSON 序列化的 UIMessage parts 数组（文本、推理过程、tool 调用）
+- 对话达到约 70% 上下文窗口时自动压缩历史，生成摘要存入 `compression` 记录
+- 清除操作插入 `clear` 标记，加载时只取最近一次 clear 之后的记录
+- `loadContextMessages()` 重建对话时注入压缩摘要作为上下文前缀
+
+### 消息渲染组件
+- `markdown-renderer.tsx`：Markdown 渲染 + KaTeX 数学公式（行内 `$...$`、块级 `$$...$$`）
+- `thinking-block.tsx`：AI 扩展思考过程（可折叠展示）
+- `tool-call-block.tsx`：tool 调用可视化（显示工具名、参数、返回结果）
+- `clear-divider.tsx` / `compression-divider.tsx`：历史中的分隔标记
+
+### Docker 部署
+- **Dockerfile**：三阶段构建（deps → builder → runner），生产镜像以非 root 用户运行
+- **docker-compose.yml**：挂载 `db-data` volume 到 `/app/data` 持久化 SQLite
+- **entrypoint.sh**：启动时自动执行 `prisma migrate deploy`，然后启动 Next.js
+- Docker 环境中 `DATABASE_URL` 应设为 `file:/app/data/prod.db`
+
 ### 环境变量
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:./dev.db"                       # Docker 环境用 file:/app/data/prod.db
 ADMIN_PASSWORD_HASH="\$2b\$12\$..."               # bcrypt hash，$ 需用 \$ 转义（dotenv-expand 问题）
 COOKIE_SECRET="<至少 32 个字符的随机字符串>"         # node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+CONTACT_EMAIL="hello@example.com"                  # 作品集页面联系邮箱
+ICP_MAP={"example.cn":"晋ICP备XXXXXXXX号-1"}       # ICP 备案号映射（JSON，key=域名，value=备案号）
 
 # 七牛云图床（可选，不配置则无法上传图片）
 QINIU_ACCESS_KEY="<AccessKey>"
