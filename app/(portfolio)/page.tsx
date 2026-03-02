@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowDown, ExternalLink, Github, ArrowRight } from "lucide-react";
 import { headers } from "next/headers";
 
+export const dynamic = "force-dynamic";
+
 async function getProjects() {
   return prisma.project.findMany({
     orderBy: [{ featured: "desc" }, { order: "asc" }, { createdAt: "desc" }],
