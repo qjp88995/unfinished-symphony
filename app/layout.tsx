@@ -60,6 +60,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-Hans" suppressHydrationWarning>
+      <head>
+        <meta name="google" content="notranslate" />
+      </head>
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
