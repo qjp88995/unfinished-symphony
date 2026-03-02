@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.gitignore
+.env*
+*.db
+*.db-journal
+.claude
+.worktrees
+README.md
