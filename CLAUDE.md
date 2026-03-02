@@ -99,6 +99,7 @@ components/
   compression-divider.tsx # 聊天压缩分割线
 
 proxy.ts                # Next.js 16 中间件（保护 /admin/* + /api/chat + /api/chat/history/* + /api/providers/* + /api/projects/events + /api/upload/token）
+prisma.config.ts        # Prisma 7 配置（datasource URL、迁移路径）
 prisma/schema.prisma    # Project + AIProvider + ChatRecord 模型
 app/generated/prisma/   # Prisma Client 生成产物（勿手动修改）
 
@@ -115,9 +116,11 @@ entrypoint.sh           # 入口脚本（自动迁移 + 启动）
 Prisma 7 要求 driver adapter，`lib/db.ts` 使用：
 ```typescript
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import BetterSqlite3 from 'better-sqlite3';
-// new PrismaClient({ adapter: new PrismaBetterSqlite3(db) })
+const adapter = new PrismaBetterSqlite3({ url: resolvedUrl });
+new PrismaClient({ adapter });
 ```
+`prisma.config.ts` 在根目录提供 `datasource.url`（从 `DATABASE_URL` 读取），`schema.prisma` 中 `datasource db` 只声明 `provider = "sqlite"`，不含 `url` 字段。
+
 每次修改 schema 后必须运行 `pnpm prisma generate`。
 
 ### AI SDK v6 Tool 格式

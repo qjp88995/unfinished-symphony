@@ -46,7 +46,7 @@ QINIU_UPLOAD_URL="https://up.qiniup.com"
 生成密码哈希：
 
 ```bash
-node -e "require('bcryptjs').hash('你的密码',12).then(h=>process.stdout.write(h.replaceAll('\$','\\\$')+'\n'))"
+node -e "require('bcryptjs').hash('你的密码',12).then(h=>process.stdout.write(h.replaceAll('\$','\\\\\$')+'\n'))"
 ```
 
 生成 Cookie 密钥（至少 32 个字符）：
@@ -58,8 +58,10 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 **3. 初始化数据库**
 
 ```bash
-pnpm prisma migrate deploy
+pnpm prisma migrate dev
 ```
+
+> 开发环境使用 `migrate dev`（自动创建数据库和迁移）。生产/Docker 环境使用 `migrate deploy`。
 
 **4. 启动**
 
