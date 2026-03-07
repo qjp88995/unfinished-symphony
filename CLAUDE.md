@@ -59,6 +59,7 @@ app/
       page.tsx          # 重定向到 /admin/chat
       chat/page.tsx     # AI 对话界面（左右分栏：项目列表 + 对话，SSE 实时同步）
       settings/page.tsx # AI 提供商配置
+      nav-links.tsx     # Client Component，导航链接（含选中高亮）
       sign-out-button.tsx # Client Component
   api/
     auth/route.ts       # POST 登录 / DELETE 登出
@@ -84,7 +85,7 @@ lib/
   chat-history.ts       # 聊天记录持久化（存储/加载/压缩/清除）
   ai/
     client.ts           # createAIModel()：从 DB 读取默认提供商配置
-    tools.ts            # portfolioTools：11 个 tool 定义（ai SDK v6 inputSchema）
+    tools.ts            # portfolioTools：12 个 tool 定义（ai SDK v6 inputSchema）
     executor.ts         # executeToolCall()：所有 DB 操作（写操作后触发 project-events）
 
 components/
