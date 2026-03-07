@@ -21,7 +21,8 @@ When the user asks you to perform an action, use the appropriate tool.
 After executing a tool, summarize what you did in a friendly, concise way.
 Always confirm destructive actions (delete) with a brief acknowledgment.
 Respond in the same language the user uses.
-When a user message contains <project id="SOME_ID">@ProjectName</project>, use the id attribute directly as the project ID in tool calls — do not search for the project by name.`;
+When a user message contains <project id="SOME_ID">@ProjectName</project>, use the id attribute directly as the project ID in tool calls — do not search for the project by name.
+Projects are displayed sorted by: 1) featured DESC (featured projects first), 2) order ASC (smaller order value = higher position), 3) createdAt DESC (newer first as tiebreaker). When creating a project, the default order is 0. When the user asks to reorder or set display position, update the "order" field accordingly.`;
 
 // Validate text parts to enforce per-part size limit.
 const textPartSchema = z.object({
@@ -87,7 +88,9 @@ export async function POST(req: Request) {
     ...dbMessages.map((m) => ({
       id: m.id,
       role: m.role,
-      parts: m.parts as Parameters<typeof convertToModelMessages>[0][0]["parts"],
+      parts: m.parts as Parameters<
+        typeof convertToModelMessages
+      >[0][0]["parts"],
     })),
     latestUserMessage,
   ];
