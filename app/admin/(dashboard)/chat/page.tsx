@@ -301,7 +301,7 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
           const toolPart = part as DynamicToolUIPart;
           const state =
             toolPart.state === "output-available" ||
-              toolPart.state === "output-error"
+            toolPart.state === "output-error"
               ? "result"
               : toolPart.state === "input-streaming"
                 ? "partial-call"
@@ -312,21 +312,21 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
               toolInvocation={
                 state === "result"
                   ? {
-                    state: "result",
-                    toolCallId: toolPart.toolCallId,
-                    toolName: toolPart.toolName,
-                    args: toolPart.input,
-                    result:
-                      toolPart.state === "output-error"
-                        ? { error: toolPart.errorText }
-                        : toolPart.output,
-                  }
+                      state: "result",
+                      toolCallId: toolPart.toolCallId,
+                      toolName: toolPart.toolName,
+                      args: toolPart.input,
+                      result:
+                        toolPart.state === "output-error"
+                          ? { error: toolPart.errorText }
+                          : toolPart.output,
+                    }
                   : {
-                    state,
-                    toolCallId: toolPart.toolCallId,
-                    toolName: toolPart.toolName,
-                    args: toolPart.input,
-                  }
+                      state,
+                      toolCallId: toolPart.toolCallId,
+                      toolName: toolPart.toolName,
+                      args: toolPart.input,
+                    }
               }
             />
           );
@@ -342,7 +342,7 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
           };
           const state =
             anyPart.state === "output-available" ||
-              anyPart.state === "output-error"
+            anyPart.state === "output-error"
               ? "result"
               : anyPart.state === "input-streaming"
                 ? "partial-call"
@@ -353,21 +353,21 @@ function AssistantContent({ parts }: { parts: AssistantPart[] }) {
               toolInvocation={
                 state === "result"
                   ? {
-                    state: "result",
-                    toolCallId: anyPart.toolCallId,
-                    toolName,
-                    args: anyPart.input,
-                    result:
-                      anyPart.state === "output-error"
-                        ? { error: anyPart.errorText }
-                        : anyPart.output,
-                  }
+                      state: "result",
+                      toolCallId: anyPart.toolCallId,
+                      toolName,
+                      args: anyPart.input,
+                      result:
+                        anyPart.state === "output-error"
+                          ? { error: anyPart.errorText }
+                          : anyPart.output,
+                    }
                   : {
-                    state,
-                    toolCallId: anyPart.toolCallId,
-                    toolName,
-                    args: anyPart.input,
-                  }
+                      state,
+                      toolCallId: anyPart.toolCallId,
+                      toolName,
+                      args: anyPart.input,
+                    }
               }
             />
           );
@@ -417,7 +417,7 @@ export default function ChatPage() {
   const uploadTargetProjectIdRef = useRef<string | null>(null);
 
   // Ref to avoid stale closure in Tiptap's editorProps.handleKeyDown
-  const handleSubmitRef = useRef<() => void>(() => { });
+  const handleSubmitRef = useRef<() => void>(() => {});
   // Track whether the @mention suggestion dropdown is open
   const isSuggestionActiveRef = useRef(false);
 
@@ -487,7 +487,7 @@ export default function ChatPage() {
       .then((d: { success: boolean; data: ProjectItem[] }) => {
         if (!sseHasFired && d.success) setProjects(d.data);
       })
-      .catch(() => { });
+      .catch(() => {});
 
     return () => es.close();
   }, []);
@@ -1003,7 +1003,9 @@ export default function ChatPage() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-none font-mono text-xs border-border/50">取消</AlertDialogCancel>
+                  <AlertDialogCancel className="rounded-none font-mono text-xs border-border/50">
+                    取消
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => void handleClearAll()}
                     className="rounded-none font-mono text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -1069,10 +1071,11 @@ export default function ChatPage() {
                 className={`flex group/msg ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`relative max-w-[80%] rounded-none px-5 py-4 text-sm shadow-sm ${m.role === "user"
-                    ? "bg-primary border border-primary/50 text-primary-foreground"
-                    : "bg-card/80 dark:bg-card/50 border border-border text-foreground backdrop-blur-sm"
-                    }`}
+                  className={`relative max-w-[80%] rounded-none px-5 py-4 text-sm shadow-sm ${
+                    m.role === "user"
+                      ? "bg-primary border border-primary/50 text-primary-foreground selection:bg-primary-foreground/30 selection:text-primary-foreground"
+                      : "bg-card/80 dark:bg-card/50 border border-border text-foreground backdrop-blur-sm"
+                  }`}
                 >
                   {/* 删除按钮：hover 时显示 */}
                   <AlertDialog>
@@ -1094,7 +1097,9 @@ export default function ChatPage() {
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-none font-mono text-xs border-border/50">取消</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-none font-mono text-xs border-border/50">
+                          取消
+                        </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => void handleDeleteMessage(m.id)}
                           className="rounded-none font-mono text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -1147,19 +1152,17 @@ export default function ChatPage() {
             </div>
           )}
 
-          {
-            uploadError && (
-              <div className="text-destructive text-sm text-center py-2">
-                {uploadError}
-              </div>
-            )
-          }
+          {uploadError && (
+            <div className="text-destructive text-sm text-center py-2">
+              {uploadError}
+            </div>
+          )}
 
           <div ref={bottomRef} />
-        </div >
+        </div>
 
         {/* Input */}
-        < div className="border-t border-border/40 bg-background/70 backdrop-blur-xl p-4 shrink-0 relative shadow-[0_-4px_24px_rgba(0,0,0,0.02)]" >
+        <div className="border-t border-border/40 bg-background/70 backdrop-blur-xl p-4 shrink-0 relative shadow-[0_-4px_24px_rgba(0,0,0,0.02)]">
           <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent"></div>
           <form
             onSubmit={handleSubmit}
@@ -1206,8 +1209,8 @@ export default function ChatPage() {
               执行指令
             </Button>
           </form>
-        </div >
-      </div >
-    </div >
+        </div>
+      </div>
+    </div>
   );
 }
