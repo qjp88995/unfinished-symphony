@@ -1,5 +1,5 @@
-import Link from "next/link";
 import SignOutButton from "./sign-out-button";
+import NavLinks from "./nav-links";
 
 export default function AdminLayout({
   children,
@@ -24,18 +24,7 @@ export default function AdminLayout({
             <span>SYS.ADMIN</span>
           </div>
 
-          <Link
-            href="/admin/chat"
-            className="text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
-          >
-            <span className="opacity-50">[01]</span> 对话终端
-          </Link>
-          <Link
-            href="/admin/settings"
-            className="text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
-          >
-            <span className="opacity-50">[02]</span> 全局配置
-          </Link>
+          <NavLinks />
         </div>
         <div className="flex items-center gap-4 text-xs font-mono uppercase tracking-wider">
           <SignOutButton />
