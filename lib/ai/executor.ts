@@ -5,6 +5,7 @@ import { emitProjectChange } from "@/lib/project-events";
 // 每个工具的参数类型
 type ToolParams = {
   list_projects: { featured?: boolean };
+  get_project: { id: string };
   create_project: {
     title: string;
     description: string;
@@ -68,6 +69,15 @@ export async function executeToolCall<T extends ToolName>(
         ],
       });
       return { projects, count: projects.length };
+    }
+
+    case "get_project": {
+      const { id } = params as ToolParams["get_project"];
+      const project = await prisma.project.findUnique({ where: { id } });
+      if (!project) {
+        return { found: false, error: `Project with ID "${id}" not found` };
+      }
+      return { found: true, project };
     }
 
     case "create_project": {
